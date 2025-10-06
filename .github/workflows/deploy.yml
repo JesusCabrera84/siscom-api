@@ -1,0 +1,160 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch: # Permite ejecución manual
+
+env:
+  IMAGE_NAME: siscom-api
+  IMAGE_TAG: ${{ github.sha }}
+  CONTAINER_NAME: siscom-api
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    environment: test
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install linting dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff black mypy
+
+      - name: Run Ruff (linter)
+        run: |
+          echo "🔍 Ejecutando Ruff..."
+          ruff check app/
+
+      - name: Run Black (formatter)
+        run: |
+          echo "🎨 Verificando formato con Black..."
+          black --check app/
+
+      # MyPy deshabilitado - puedes ejecutarlo localmente con: make type-check
+      # - name: Run MyPy (type checker)
+      #   continue-on-error: true
+      #   run: |
+      #     echo "📝 Verificando tipos con MyPy..."
+      #     mypy app/ --ignore-missing-imports
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: siscom-api:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          load: true
+
+      - name: Save Docker image
+        run: |
+          docker save ${{ env.IMAGE_NAME }}:latest | gzip > siscom-api.tar.gz
+
+      - name: Copy files to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: ${{ secrets.EC2_SSH_PORT }}
+          source: "siscom-api.tar.gz,docker-compose.yml"
+          target: "/home/${{ secrets.EC2_USERNAME }}/siscom-api"
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          CONTAINER_NAME: ${{ env.CONTAINER_NAME }}
+          DB_HOST: ${{ vars.DB_HOST }}
+          DB_PORT: ${{ vars.DB_PORT }}
+          DB_USERNAME: ${{ vars.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_DATABASE: ${{ vars.DB_DATABASE }}
+          DB_MIN_CONNECTIONS: ${{ vars.DB_MIN_CONNECTIONS }}
+          DB_MAX_CONNECTIONS: ${{ vars.DB_MAX_CONNECTIONS }}
+          DB_CONNECTION_TIMEOUT_SECS: ${{ vars.DB_CONNECTION_TIMEOUT_SECS }}
+          DB_IDLE_TIMEOUT_SECS: ${{ vars.DB_IDLE_TIMEOUT_SECS }}
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: ${{ secrets.EC2_SSH_PORT }}
+          envs: IMAGE_NAME,CONTAINER_NAME,DB_HOST,DB_PORT,DB_USERNAME,DB_PASSWORD,DB_DATABASE,DB_MIN_CONNECTIONS,DB_MAX_CONNECTIONS,DB_CONNECTION_TIMEOUT_SECS,DB_IDLE_TIMEOUT_SECS
+          script: |
+            cd /home/${{ secrets.EC2_USERNAME }}/siscom-api
+            
+            # Cargar la nueva imagen
+            docker load < siscom-api.tar.gz
+            
+            # Crear la red si no existe
+            docker network inspect siscom-network >/dev/null 2>&1 || docker network create siscom-network
+            
+            # Crear archivo .env con las variables
+            cat > .env << EOF
+            DB_HOST=${DB_HOST}
+            DB_PORT=${DB_PORT}
+            DB_USERNAME=${DB_USERNAME}
+            DB_PASSWORD=${DB_PASSWORD}
+            DB_DATABASE=${DB_DATABASE}
+            DB_MIN_CONNECTIONS=${DB_MIN_CONNECTIONS}
+            DB_MAX_CONNECTIONS=${DB_MAX_CONNECTIONS}
+            DB_CONNECTION_TIMEOUT_SECS=${DB_CONNECTION_TIMEOUT_SECS}
+            DB_IDLE_TIMEOUT_SECS=${DB_IDLE_TIMEOUT_SECS}
+            JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
+            JWT_ALGORITHM=HS256
+            ACCESS_TOKEN_EXPIRE_MINUTES=60
+            ALLOWED_ORIGINS=*
+            EOF
+            
+            # Detener y eliminar el contenedor existente
+            docker-compose down || true
+            
+            # Levantar el nuevo contenedor
+            docker-compose up -d
+            
+            # Esperar a que el contenedor esté saludable
+            echo "Esperando a que el contenedor esté saludable..."
+            timeout 60s bash -c 'until docker inspect --format="{{.State.Health.Status}}" ${CONTAINER_NAME} | grep -q "healthy"; do sleep 2; done' || echo "Warning: Container health check timed out"
+            
+            # Limpiar imágenes antiguas
+            docker image prune -f
+            
+            # Eliminar el archivo tar.gz
+            rm -f siscom-api.tar.gz
+            
+            echo "Deployment completed successfully!"
+
+      - name: Verify deployment
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: ${{ secrets.EC2_SSH_PORT }}
+          script: |
+            docker ps | grep siscom-api
+            docker logs --tail 20 siscom-api
+
+      - name: Notification on failure
+        if: failure()
+        run: |
+          echo "Deployment failed! Check the logs above for details."
+          # Aquí puedes agregar notificaciones a Slack, Discord, email, etc.
+

@@ -1,0 +1,36 @@
+# --- Core FastAPI stack ---
+fastapi
+uvicorn[standard]
+
+# --- Configuración y entorno ---
+python-dotenv
+pydantic-settings
+
+# --- Base de datos y ORM ---
+SQLAlchemy
+asyncpg
+psycopg[binary]
+
+# --- Seguridad y autenticación JWT ---
+python-jose[cryptography]
+passlib[bcrypt]
+
+# --- Server-Sent Events ---
+sse-starlette
+
+# --- Logging y utilidades ---
+loguru
+
+# --- Pruebas y cliente HTTP ---
+pytest
+httpx
+
+# --- Tipos opcionales y dev helpers ---
+types-python-jose
+types-passlib
+
+# --- Herramientas de desarrollo y linting ---
+ruff
+black
+mypy
+pytest-cov
