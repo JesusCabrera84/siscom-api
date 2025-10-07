@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import communications, stream
+from app.api.routes import communications
 from app.core.config import settings
 
 app = FastAPI(
@@ -32,6 +32,5 @@ async def health_check():
     }
 
 
-# Incluir routers
+# Incluir routers API v1
 app.include_router(communications.router)
-app.include_router(stream.router)

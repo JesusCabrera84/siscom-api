@@ -222,28 +222,52 @@ docker compose up -d
 
 ## 📚 Documentación de la API
 
-### Endpoints disponibles:
+### 🚀 Guías y Documentación
+
+- **[📘 API REST Guide](API_REST_GUIDE.md)** - Documentación completa de todos los endpoints REST v1
+- **[🔄 Migration Guide](MIGRATION_REST.md)** - Guía rápida de migración a REST v1
+- **[📮 Postman Examples](POSTMAN_EXAMPLES.md)** - Ejemplos con cURL, Postman y JavaScript
+- **[📖 Swagger UI](http://localhost:8000/api/docs)** - Documentación interactiva (cuando el servidor esté corriendo)
+
+### Endpoints REST v1
 
 #### Health Check
 ```http
 GET /health
 ```
 
-#### Comunicaciones
+#### Comunicaciones - Múltiples Dispositivos
 ```http
-POST /communications/history
-Content-Type: application/json
+GET /api/v1/communications?device_ids=867564050638581&device_ids=DEVICE123
 Authorization: Bearer {token}
-
-{
-  "device_ids": ["DEVICE123", "DEVICE456"]
-}
 ```
 
-#### Stream (SSE)
+#### Comunicaciones - Un Solo Dispositivo
 ```http
-GET /stream/?device_ids=DEVICE123&device_ids=DEVICE456
+GET /api/v1/devices/{device_id}/communications
+Authorization: Bearer {token}
 ```
+
+#### Stream SSE - Múltiples Dispositivos
+```http
+GET /api/v1/communications/stream?device_ids=867564050638581&device_ids=DEVICE123
+Accept: text/event-stream
+```
+
+#### Stream SSE - Un Solo Dispositivo
+```http
+GET /api/v1/devices/{device_id}/communications/stream
+Accept: text/event-stream
+```
+
+### Tabla de Endpoints
+
+| Endpoint | Método | Auth | Descripción |
+|----------|--------|------|-------------|
+| `GET /api/v1/communications` | GET | ✅ JWT | Histórico de múltiples dispositivos |
+| `GET /api/v1/communications/stream` | GET | ❌ No | Stream SSE de múltiples dispositivos |
+| `GET /api/v1/devices/{device_id}/communications` | GET | ✅ JWT | Histórico de un solo dispositivo |
+| `GET /api/v1/devices/{device_id}/communications/stream` | GET | ❌ No | Stream SSE de un solo dispositivo |
 
 ## 🏗️ Arquitectura
 

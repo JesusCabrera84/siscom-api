@@ -1,0 +1,164 @@
+{
+  "info": {
+    "name": "SISCOM API v1 (REST)",
+    "description": "Colección actualizada siguiendo mejores prácticas REST\n\n✅ Endpoints con versionamiento /api/v1/\n✅ GET para consultas (no POST)\n✅ Query parameters para filtros\n✅ Path parameters para recursos específicos",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
+          "path": ["health"]
+        },
+        "description": "Verifica que el servidor esté funcionando.\n\n✅ No requiere autenticación."
+      }
+    },
+    {
+      "name": "📡 Histórico - Múltiples Dispositivos",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "description": "Token JWT requerido"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/communications?device_ids=867564050638581&device_ids=DEVICE123",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "communications"],
+          "query": [
+            {
+              "key": "device_ids",
+              "value": "867564050638581",
+              "description": "ID del primer dispositivo"
+            },
+            {
+              "key": "device_ids",
+              "value": "DEVICE123",
+              "description": "ID del segundo dispositivo"
+            }
+          ]
+        },
+        "description": "Obtiene el histórico de comunicaciones de múltiples dispositivos GPS.\n\n**Método REST:** GET con query parameters\n\n**Query Parameters:**\n- `device_ids`: Lista de IDs (repetir parámetro para cada ID)\n\n**Ejemplo:**\n```\nGET /api/v1/communications?device_ids=867564050638581&device_ids=DEVICE123\n```"
+      }
+    },
+    {
+      "name": "📡 Histórico - Un Solo Dispositivo",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "description": "Token JWT requerido"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/devices/867564050638581/communications",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "devices", "867564050638581", "communications"]
+        },
+        "description": "Obtiene el histórico de comunicaciones de UN solo dispositivo GPS.\n\n**Método REST:** GET con path parameter\n\n**Path Parameters:**\n- `device_id`: ID del dispositivo (en la URL)\n\n**Ejemplo:**\n```\nGET /api/v1/devices/867564050638581/communications\n```"
+      }
+    },
+    {
+      "name": "🔴 Stream SSE - Múltiples Dispositivos",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "text/event-stream",
+            "description": "Header requerido para SSE"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/communications/stream?device_ids=867564050638581&device_ids=DEVICE123",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "communications", "stream"],
+          "query": [
+            {
+              "key": "device_ids",
+              "value": "867564050638581"
+            },
+            {
+              "key": "device_ids",
+              "value": "DEVICE123"
+            }
+          ]
+        },
+        "description": "Suscripción SSE para recibir actualizaciones en tiempo real de múltiples dispositivos.\n\n**Método REST:** GET con Server-Sent Events\n\n⚠️ **NOTA:** Postman tiene soporte limitado para SSE.\n\n**Probar con cURL:**\n```bash\ncurl -N 'http://10.8.0.1:8000/api/v1/communications/stream?device_ids=867564050638581&device_ids=DEVICE123'\n```\n\n**O con JavaScript:**\n```javascript\nconst eventSource = new EventSource(\n  'http://10.8.0.1:8000/api/v1/communications/stream?device_ids=867564050638581&device_ids=DEVICE123'\n);\n\neventSource.addEventListener('update', (event) => {\n  console.log(JSON.parse(event.data));\n});\n```"
+      }
+    },
+    {
+      "name": "🔴 Stream SSE - Un Solo Dispositivo",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "text/event-stream",
+            "description": "Header requerido para SSE"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/devices/867564050638581/communications/stream",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "devices", "867564050638581", "communications", "stream"]
+        },
+        "description": "Suscripción SSE para recibir actualizaciones en tiempo real de UN solo dispositivo.\n\n**Método REST:** GET con path parameter\n\n⚠️ **NOTA:** Postman tiene soporte limitado para SSE.\n\n**Probar con cURL:**\n```bash\ncurl -N 'http://10.8.0.1:8000/api/v1/devices/867564050638581/communications/stream'\n```\n\n**O con JavaScript:**\n```javascript\nconst deviceId = '867564050638581';\nconst eventSource = new EventSource(\n  `http://10.8.0.1:8000/api/v1/devices/${deviceId}/communications/stream`\n);\n\neventSource.addEventListener('update', (event) => {\n  console.log(JSON.parse(event.data));\n});\n```"
+      }
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "console.log('🚀 Request:', pm.info.requestName);"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "console.log('✅ Status:', pm.response.code, pm.response.status);",
+          "",
+          "if (pm.response.code === 401) {",
+          "    console.log('⚠️ Error 401: Token inválido o expirado.');",
+          "}",
+          "",
+          "if (pm.response.code === 422) {",
+          "    console.log('⚠️ Error 422: Query parameters incorrectos.');",
+          "    console.log('Asegúrate de incluir device_ids en la URL.');",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://10.8.0.1:8000",
+      "type": "string",
+      "description": "URL base de SISCOM API"
+    },
+    {
+      "key": "token",
+      "value": "eyJhbGciOiJIUzI1NiJ9.e30.XmNK3GpH3Ys_7wsYBfq4C3M6goz71I7dTgUkuIa5lyQ",
+      "type": "string",
+      "description": "Token JWT de autenticación"
+    }
+  ]
+}
+

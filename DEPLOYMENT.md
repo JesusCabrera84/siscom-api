@@ -1,5 +1,9 @@
 # Guía de Despliegue - SISCOM API
 
+Esta guía cubre el despliegue de SISCOM API v1 (REST) en EC2 usando GitHub Actions.
+
+**Nota:** Esta API usa endpoints REST v1 con versionamiento `/api/v1/`. Ver [API_REST_GUIDE.md](API_REST_GUIDE.md) para documentación de endpoints.
+
 ## Requisitos Previos
 
 1. **Servidor EC2** configurado con:

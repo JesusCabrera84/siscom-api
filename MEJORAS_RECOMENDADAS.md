@@ -1,6 +1,32 @@
 # 📋 Mejoras Recomendadas para SISCOM API
 
-## 🎯 Prioridad Alta
+## ✅ Actualizaciones Recientes (2024)
+
+### Mejoras Implementadas:
+
+1. **✅ Esquemas Pydantic** - Implementado con validación completa
+   - Archivos: `app/schemas/communications.py`
+   - Ver sección 3 para detalles
+
+2. **✅ Endpoints REST v1** - Migración completa a mejores prácticas REST
+   - Versionamiento con `/api/v1/`
+   - GET para consultas (no POST)
+   - Query parameters y path parameters
+   - Ver [API_REST_GUIDE.md](API_REST_GUIDE.md) para documentación completa
+
+3. **✅ Validación Automática** - FastAPI valida automáticamente entrada/salida
+   - Response models tipados
+   - Query parameter validation
+   - Documentación automática en Swagger
+
+### Documentación Actualizada:
+- [API_REST_GUIDE.md](API_REST_GUIDE.md) - Guía completa de endpoints REST v1
+- [MIGRATION_REST.md](MIGRATION_REST.md) - Guía de migración a REST v1
+- [POSTMAN_EXAMPLES.md](POSTMAN_EXAMPLES.md) - Ejemplos actualizados con cURL, Postman, JavaScript
+
+---
+
+## 🎯 Prioridad Alta (Pendientes)
 
 ### 1. ⚠️ Logging Estructurado (archivos utils/logger.py vacío)
 
@@ -95,11 +121,15 @@ app.add_exception_handler(DatabaseError, database_exception_handler)
 app.add_exception_handler(AuthenticationError, authentication_exception_handler)
 ```
 
-### 3. 📝 Esquemas Pydantic (falta validación de entrada/salida)
+### 3. 📝 Esquemas Pydantic ✅ IMPLEMENTADO
 
-**Problema actual**: No hay validación de schemas en los endpoints.
+**Estado**: ✅ **COMPLETADO** - Los schemas Pydantic han sido implementados para validación de entrada/salida.
 
-**Solución propuesta**:
+**Archivos creados**:
+- `app/schemas/communications.py` - Contiene `CommunicationResponse` y validación con Query parameters
+- Endpoints actualizados para usar REST v1 con GET y query parameters
+
+**Solución implementada**:
 ```python
 # app/schemas/communications.py
 from pydantic import BaseModel, Field
@@ -125,16 +155,30 @@ class CommunicationResponse(BaseModel):
         from_attributes = True
 ```
 
-**Actualizar endpoints**:
+**Endpoints actualizados** (REST v1):
 ```python
-@router.post("/history", response_model=List[CommunicationResponse])
-async def get_history(
-    request: DeviceHistoryRequest,
+# ✅ Implementado con GET y query parameters
+@router.get("/api/v1/communications", response_model=list[CommunicationResponse])
+async def get_communications_history(
+    device_ids: list[str] = Query(..., min_length=1, max_length=100),
     db=Depends(get_db),
     user=Depends(get_current_user)
 ):
-    return await get_communications(db, request.device_ids)
+    return await get_communications(db, device_ids)
+
+# ✅ Nuevo endpoint para un solo dispositivo
+@router.get("/api/v1/devices/{device_id}/communications", response_model=list[CommunicationResponse])
+async def get_device_communications(
+    device_id: str,
+    db=Depends(get_db),
+    user=Depends(get_current_user)
+):
+    return await get_communications(db, [device_id])
 ```
+
+**Ver documentación completa**:
+- [API_REST_GUIDE.md](API_REST_GUIDE.md) - Guía completa de endpoints REST v1
+- [MIGRATION_REST.md](MIGRATION_REST.md) - Guía de migración
 
 ### 4. 🗄️ Migraciones con Alembic
 
