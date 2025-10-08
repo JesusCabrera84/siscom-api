@@ -1,0 +1,206 @@
+{
+  "meta": {
+    "project": "siscom-api",
+    "date": "2025-10-04",
+    "prepared_by": "Software Development Manager"
+  },
+  "product_overview": "siscom-api is a RESTful API built with FastAPI to manage and monitor GPS communications from Suntech and Queclink devices. It supports access to historical GPS data and real-time streaming via Server-Sent Events, enabling fleet management and tracking solutions to efficiently query and monitor GPS device communications securely and scalably.",
+  "core_goals": [
+    "Provide secure access to historical GPS communication records for multiple or individual devices.",
+    "Enable real-time streaming of GPS communication data for live tracking via Server-Sent Events (SSE).",
+    "Support GPS devices from two major manufacturers: Suntech and Queclink.",
+    "Ensure high performance and scalability using async architecture with connection pooling.",
+    "Deliver a well-documented API with OpenAPI/Swagger integration for ease of use and integration.",
+    "Maintain high service availability with health checks and robust error handling.",
+    "Support configurable CORS and JWT-based authentication for secure and flexible deployments."
+  ],
+  "key_features": [
+    "Health Check Endpoint (`GET /health`) for monitoring API service availability without authentication.",
+    "Historical Communications Endpoint for Multiple Devices (`GET /api/v1/communications`) secured with JWT, supporting batch queries (1-100 devices) returning merged data from Suntech and Queclink tables.",
+    "Historical Communications Endpoint for Single Device (`GET /api/v1/devices/{device_id}/communications`) secured with JWT for querying an individual device's historical data.",
+    "Real-Time Streaming for Multiple Devices (`GET /api/v1/communications/stream`) via SSE with no authentication required, supporting 1-50 device IDs per request.",
+    "Real-Time Streaming for Single Device (`GET /api/v1/devices/{device_id}/communications/stream`) via SSE with no authentication required for individual live updates.",
+    "JWT Authentication with HS256 algorithm enforcing 60-minute token expiry and validation on protected endpoints.",
+    "Support for CORS with configurable allowed origins to enable cross-domain flexibility.",
+    "Database models for GPS communication data from Suntech and Queclink devices, including details like location, speed, course, battery status, and timestamps.",
+    "Asynchronous PostgreSQL connection pooling with minimum and maximum connections configuration for performance and scalability.",
+    "Comprehensive API documentation accessible via Swagger UI (`/api/docs`) and ReDoc (`/api/redoc`)."
+  ],
+  "user_flow_summary": [
+    "A client requests the health check endpoint `GET /health` to verify API availability without authentication.",
+    "An authenticated client queries historical GPS communications for multiple devices by providing device IDs via `GET /api/v1/communications` with a valid JWT token.",
+    "An authenticated client requests historical data for a specific device through `GET /api/v1/devices/{device_id}/communications` with JWT token authentication.",
+    "Clients subscribe to real-time communication streams of multiple devices via `GET /api/v1/communications/stream` using SSE with device IDs as query parameters, without authentication.",
+    "Clients subscribe to real-time communication streams of a specific device using SSE at `GET /api/v1/devices/{device_id}/communications/stream`, no authentication required.",
+    "Clients include JWT tokens in the Authorization header for all protected endpoints; the server validates tokens and rejects unauthorized or expired requests with corresponding error responses.",
+    "Clients handle SSE connections that remain open indefinitely, process events as they arrive, and automatically reconnect upon disconnection to ensure continuous live data.",
+    "Administrators deploy and monitor the API service within Docker containers, using configured environment variables for database and security settings, and rely on automated health checks and logging for operational insights."
+  ],
+  "validation_criteria": [
+    "Health check endpoint returns 200 OK with service status and version within 100ms consistently.",
+    "Historical communications endpoints require valid JWT tokens; requests without or with invalid tokens receive 401 Unauthorized.",
+    "Queries for multiple devices accept 1-100 device IDs and return merged, ordered data from both Suntech and Queclink tables within 2 seconds for typical loads.",
+    "Queries for single device historical data accept valid device IDs and return data ordered by timestamp, or 404 if device not found.",
+    "SSE streaming endpoints accept device IDs (1-50) and successfully maintain open connections sending real-time GPS update events continuously.",
+    "SSE endpoints correctly set and require `Accept: text/event-stream` header and send events formatted as defined.",
+    "JWT tokens use HS256, expire after 60 minutes, and are securely managed via environment variables.",
+    "CORS policies are enforced per environment variable configuration, supporting credentials and restricting origins as configured.",
+    "All API endpoints are documented in OpenAPI schema; Swagger UI and ReDoc endpoints function correctly and display current API specs.",
+    "Error handling returns appropriate status codes and messages for invalid JWTs, missing parameters, validation errors, and database failures.",
+    "Database connection pooling operates within configured min-max limits, recovers gracefully from failures, and supports concurrent loads.",
+    "Logging captures all requests, errors with stack traces, and database connection events, configurable by log level settings.",
+    "Docker deployment includes multi-stage build, non-root user, and health check integration, enabling smooth CI/CD using GitHub Actions."
+  ],
+  "code_summary": {
+    "project_name": "siscom-api",
+    "project_description": "API REST FastAPI para gestión de comunicaciones de dispositivos GPS (Suntech y Queclink) con soporte para histórico de datos y streaming en tiempo real mediante Server-Sent Events",
+    "tech_stack": {
+      "language": "Python 3.11+",
+      "framework": "FastAPI",
+      "database": "PostgreSQL",
+      "orm": "SQLAlchemy (async)",
+      "authentication": "JWT (JSON Web Tokens)",
+      "streaming": "Server-Sent Events (SSE)",
+      "web_server": "Uvicorn (ASGI)",
+      "containerization": "Docker & Docker Compose",
+      "key_libraries": [
+        "fastapi - Framework web async",
+        "uvicorn - Servidor ASGI",
+        "sqlalchemy - ORM async para PostgreSQL",
+        "asyncpg - Driver PostgreSQL async",
+        "python-jose - Implementación JWT",
+        "passlib - Hashing de contraseñas",
+        "sse-starlette - Server-Sent Events",
+        "pydantic-settings - Gestión de configuración",
+        "loguru - Logging estructurado"
+      ]
+    },
+    "features": [
+      {
+        "name": "Health Check",
+        "description": "Endpoint de salud para monitoreo del servicio",
+        "endpoints": [
+          "GET /health"
+        ],
+        "authentication": false
+      },
+      {
+        "name": "Histórico de Comunicaciones - Múltiples Dispositivos",
+        "description": "Consulta histórica de comunicaciones GPS de múltiples dispositivos simultáneamente",
+        "endpoints": [
+          "GET /api/v1/communications"
+        ],
+        "authentication": true,
+        "parameters": [
+          "device_ids (query params, array, 1-100 items)"
+        ]
+      },
+      {
+        "name": "Histórico de Comunicaciones - Un Dispositivo",
+        "description": "Consulta histórica de comunicaciones GPS de un dispositivo específico",
+        "endpoints": [
+          "GET /api/v1/devices/{device_id}/communications"
+        ],
+        "authentication": true,
+        "parameters": [
+          "device_id (path parameter)"
+        ]
+      },
+      {
+        "name": "Stream SSE - Múltiples Dispositivos",
+        "description": "Suscripción a eventos en tiempo real de múltiples dispositivos GPS mediante Server-Sent Events",
+        "endpoints": [
+          "GET /api/v1/communications/stream"
+        ],
+        "authentication": false,
+        "parameters": [
+          "device_ids (query params, array, 1-50 items)"
+        ],
+        "headers": [
+          "Accept: text/event-stream"
+        ]
+      },
+      {
+        "name": "Stream SSE - Un Dispositivo",
+        "description": "Suscripción a eventos en tiempo real de un dispositivo GPS específico mediante Server-Sent Events",
+        "endpoints": [
+          "GET /api/v1/devices/{device_id}/communications/stream"
+        ],
+        "authentication": false,
+        "parameters": [
+          "device_id (path parameter)"
+        ],
+        "headers": [
+          "Accept: text/event-stream"
+        ]
+      }
+    ],
+    "database_models": [
+      {
+        "name": "CommunicationSuntech",
+        "table": "communications_suntech",
+        "description": "Comunicaciones de dispositivos GPS marca Suntech",
+        "key_fields": [
+          "device_id",
+          "latitude",
+          "longitude",
+          "speed",
+          "course",
+          "gps_datetime",
+          "odometer",
+          "battery_voltage"
+        ]
+      },
+      {
+        "name": "CommunicationQueclink",
+        "table": "communications_queclink",
+        "description": "Comunicaciones de dispositivos GPS marca Queclink",
+        "key_fields": [
+          "device_id",
+          "latitude",
+          "longitude",
+          "speed",
+          "course",
+          "gps_datetime",
+          "odometer",
+          "battery_voltage"
+        ]
+      }
+    ],
+    "security": {
+      "authentication_method": "JWT Bearer Token",
+      "jwt_algorithm": "HS256",
+      "token_expiration": "60 minutes",
+      "cors_enabled": true,
+      "protected_endpoints": [
+        "/api/v1/communications",
+        "/api/v1/devices/{device_id}/communications"
+      ],
+      "public_endpoints": [
+        "/health",
+        "/api/v1/communications/stream",
+        "/api/v1/devices/{device_id}/communications/stream"
+      ]
+    },
+    "infrastructure": {
+      "port": 8000,
+      "database_pool": {
+        "min_connections": 10,
+        "max_connections": 20,
+        "connection_timeout": 30,
+        "idle_timeout": 300
+      },
+      "deployment": {
+        "container_runtime": "Docker",
+        "orchestration": "Docker Compose",
+        "ci_cd": "GitHub Actions",
+        "health_check_enabled": true
+      }
+    },
+    "api_documentation": {
+      "swagger_ui": "/api/docs",
+      "redoc": "/api/redoc",
+      "openapi_schema": "/api/openapi.json"
+    }
+  }
+}

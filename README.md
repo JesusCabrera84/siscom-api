@@ -321,9 +321,76 @@ Tablas separadas para cada fabricante, compartiendo la misma estructura base:
 
 ## 🧪 Testing
 
+### Suite Completa de Tests con pytest
+
+El proyecto incluye una suite completa de tests unitarios y de integración con más de 50 tests y ~95% de cobertura.
+
+#### Ejecutar Tests
+
 ```bash
-pytest
+# Opción 1: Script interactivo (recomendado)
+./run_unit_tests.sh
+
+# Opción 2: pytest directo
+pytest                    # Todos los tests
+pytest -v                 # Verbose
+pytest --cov=app          # Con cobertura
+
+# Opción 3: Make commands
+make test                 # Todos los tests
+make test-unit            # Solo unitarios
+make test-integration     # Solo integración
+make test-cov             # Con cobertura HTML
+make test-auth            # Solo autenticación
+make test-fast            # Excluir tests lentos
 ```
+
+#### Tests por Categoría
+
+```bash
+pytest -m unit            # Tests unitarios (rápidos)
+pytest -m integration     # Tests de integración
+pytest -m auth            # Tests de autenticación
+pytest -m database        # Tests de base de datos
+pytest -m "not slow"      # Excluir tests lentos
+```
+
+#### Tests Específicos
+
+```bash
+# Un archivo específico
+pytest test/test_health.py
+
+# Una clase específica
+pytest test/test_security.py::TestJWTToken
+
+# Un test específico
+pytest test/test_health.py::TestHealthEndpoint::test_health_check_returns_200
+```
+
+#### Cobertura de Tests
+
+```bash
+# Generar reporte de cobertura
+pytest --cov=app --cov-report=html
+
+# Ver reporte en navegador
+xdg-open htmlcov/index.html  # Linux
+open htmlcov/index.html       # macOS
+```
+
+#### Estructura de Tests
+
+- `test/test_health.py` - Tests del health check endpoint
+- `test/test_security.py` - Tests de JWT y autenticación
+- `test/test_communications.py` - Tests de endpoints de comunicaciones
+- `test/test_repository.py` - Tests del servicio de repositorio
+- `test/test_schemas.py` - Tests de schemas Pydantic
+- `test/test_models.py` - Tests de modelos SQLAlchemy
+- `test/test_config.py` - Tests de configuración
+- `test/conftest.py` - Fixtures compartidas
+
+Ver documentación completa en [test/README.md](test/README.md)
 
 ## 📝 Mejoras Sugeridas
 
@@ -334,11 +401,11 @@ pytest
 - ✅ Docker multi-stage build
 - ✅ GitHub Actions CI/CD
 - ✅ Variables de entorno bien estructuradas
+- ✅ **Suite completa de tests con pytest (50+ tests, ~95% coverage)**
 
 ### Por Implementar:
 - ⚠️ Logging estructurado con Loguru (archivos utils vacíos)
 - ⚠️ Manejo de excepciones personalizado
-- ⚠️ Pruebas unitarias e integración
 - ⚠️ Rate limiting
 - ⚠️ Caché (Redis) para consultas frecuentes
 - ⚠️ Métricas y monitoreo (Prometheus)

@@ -1,0 +1,113 @@
+{
+  "project_name": "siscom-api",
+  "project_description": "API REST FastAPI para gestión de comunicaciones de dispositivos GPS (Suntech y Queclink) con soporte para histórico de datos y streaming en tiempo real mediante Server-Sent Events",
+  "tech_stack": {
+    "language": "Python 3.11+",
+    "framework": "FastAPI",
+    "database": "PostgreSQL",
+    "orm": "SQLAlchemy (async)",
+    "authentication": "JWT (JSON Web Tokens)",
+    "streaming": "Server-Sent Events (SSE)",
+    "web_server": "Uvicorn (ASGI)",
+    "containerization": "Docker & Docker Compose",
+    "key_libraries": [
+      "fastapi - Framework web async",
+      "uvicorn - Servidor ASGI",
+      "sqlalchemy - ORM async para PostgreSQL",
+      "asyncpg - Driver PostgreSQL async",
+      "python-jose - Implementación JWT",
+      "passlib - Hashing de contraseñas",
+      "sse-starlette - Server-Sent Events",
+      "pydantic-settings - Gestión de configuración",
+      "loguru - Logging estructurado"
+    ]
+  },
+  "features": [
+    {
+      "name": "Health Check",
+      "description": "Endpoint de salud para monitoreo del servicio",
+      "endpoints": ["GET /health"],
+      "authentication": false
+    },
+    {
+      "name": "Histórico de Comunicaciones - Múltiples Dispositivos",
+      "description": "Consulta histórica de comunicaciones GPS de múltiples dispositivos simultáneamente",
+      "endpoints": ["GET /api/v1/communications"],
+      "authentication": true,
+      "parameters": ["device_ids (query params, array, 1-100 items)"]
+    },
+    {
+      "name": "Histórico de Comunicaciones - Un Dispositivo",
+      "description": "Consulta histórica de comunicaciones GPS de un dispositivo específico",
+      "endpoints": ["GET /api/v1/devices/{device_id}/communications"],
+      "authentication": true,
+      "parameters": ["device_id (path parameter)"]
+    },
+    {
+      "name": "Stream SSE - Múltiples Dispositivos",
+      "description": "Suscripción a eventos en tiempo real de múltiples dispositivos GPS mediante Server-Sent Events",
+      "endpoints": ["GET /api/v1/communications/stream"],
+      "authentication": false,
+      "parameters": ["device_ids (query params, array, 1-50 items)"],
+      "headers": ["Accept: text/event-stream"]
+    },
+    {
+      "name": "Stream SSE - Un Dispositivo",
+      "description": "Suscripción a eventos en tiempo real de un dispositivo GPS específico mediante Server-Sent Events",
+      "endpoints": ["GET /api/v1/devices/{device_id}/communications/stream"],
+      "authentication": false,
+      "parameters": ["device_id (path parameter)"],
+      "headers": ["Accept: text/event-stream"]
+    }
+  ],
+  "database_models": [
+    {
+      "name": "CommunicationSuntech",
+      "table": "communications_suntech",
+      "description": "Comunicaciones de dispositivos GPS marca Suntech",
+      "key_fields": ["device_id", "latitude", "longitude", "speed", "course", "gps_datetime", "odometer", "battery_voltage"]
+    },
+    {
+      "name": "CommunicationQueclink",
+      "table": "communications_queclink",
+      "description": "Comunicaciones de dispositivos GPS marca Queclink",
+      "key_fields": ["device_id", "latitude", "longitude", "speed", "course", "gps_datetime", "odometer", "battery_voltage"]
+    }
+  ],
+  "security": {
+    "authentication_method": "JWT Bearer Token",
+    "jwt_algorithm": "HS256",
+    "token_expiration": "60 minutes",
+    "cors_enabled": true,
+    "protected_endpoints": [
+      "/api/v1/communications",
+      "/api/v1/devices/{device_id}/communications"
+    ],
+    "public_endpoints": [
+      "/health",
+      "/api/v1/communications/stream",
+      "/api/v1/devices/{device_id}/communications/stream"
+    ]
+  },
+  "infrastructure": {
+    "port": 8000,
+    "database_pool": {
+      "min_connections": 10,
+      "max_connections": 20,
+      "connection_timeout": 30,
+      "idle_timeout": 300
+    },
+    "deployment": {
+      "container_runtime": "Docker",
+      "orchestration": "Docker Compose",
+      "ci_cd": "GitHub Actions",
+      "health_check_enabled": true
+    }
+  },
+  "api_documentation": {
+    "swagger_ui": "/api/docs",
+    "redoc": "/api/redoc",
+    "openapi_schema": "/api/openapi.json"
+  }
+}
+

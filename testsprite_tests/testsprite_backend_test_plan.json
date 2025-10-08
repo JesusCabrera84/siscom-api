@@ -1,0 +1,52 @@
+[
+  {
+    "id": "TC001",
+    "title": "health check endpoint returns service status",
+    "description": "Verify that the GET /health endpoint returns a 200 OK status with the current service status and version information within 100 milliseconds, without requiring authentication."
+  },
+  {
+    "id": "TC002",
+    "title": "historical communications multiple devices with valid jwt",
+    "description": "Test the GET /api/v1/communications endpoint with a valid JWT token and 1 to 100 device IDs as query parameters. Verify that the response returns merged and ordered historical GPS communication data from both Suntech and Queclink tables within 2 seconds."
+  },
+  {
+    "id": "TC003",
+    "title": "historical communications single device with valid jwt",
+    "description": "Test the GET /api/v1/devices/{device_id}/communications endpoint with a valid JWT token and a valid device_id path parameter. Verify that the response returns ordered historical GPS communication data for the specified device or a 404 status if the device is not found."
+  },
+  {
+    "id": "TC004",
+    "title": "real time streaming multiple devices sse connection",
+    "description": "Test the GET /api/v1/communications/stream endpoint with 1 to 50 device IDs as query parameters and the Accept: text/event-stream header. Verify that the SSE connection is established without authentication and that real-time GPS communication events are continuously received."
+  },
+  {
+    "id": "TC005",
+    "title": "real time streaming single device sse connection",
+    "description": "Test the GET /api/v1/devices/{device_id}/communications/stream endpoint with a valid device_id path parameter and the Accept: text/event-stream header. Verify that the SSE connection is established without authentication and that real-time GPS communication events for the specific device are continuously received."
+  },
+  {
+    "id": "TC006",
+    "title": "jwt authentication token validation and expiry",
+    "description": "Verify that JWT tokens used for protected endpoints are signed with HS256 algorithm, expire after 60 minutes, and that requests with missing, invalid, or expired tokens receive a 401 Unauthorized response."
+  },
+  {
+    "id": "TC007",
+    "title": "cors policy enforcement for allowed origins",
+    "description": "Test that the API enforces CORS policies based on configured allowed origins environment variables, supporting credentials and restricting cross-origin requests as configured."
+  },
+  {
+    "id": "TC008",
+    "title": "api documentation accessibility and correctness",
+    "description": "Verify that the OpenAPI schema is accessible at /api/openapi.json and that the Swagger UI at /api/docs and ReDoc at /api/redoc display the current API specifications correctly."
+  },
+  {
+    "id": "TC009",
+    "title": "error handling for invalid requests and database failures",
+    "description": "Test that the API returns appropriate status codes and error messages for invalid JWT tokens, missing or invalid parameters, validation errors, and database failures across all endpoints."
+  },
+  {
+    "id": "TC010",
+    "title": "database connection pooling performance and recovery",
+    "description": "Verify that the asynchronous PostgreSQL connection pool operates within the configured minimum and maximum connections, handles concurrent loads efficiently, and recovers gracefully from connection failures."
+  }
+]

@@ -1,0 +1,17 @@
+{
+  "status": "commited",
+  "type": "backend",
+  "scope": "codebase",
+  "localEndpoint": "http://localhost:8000",
+  "backendAuthType": "Bearer token",
+  "backendCredential": "secret",
+  "executionArgs": {
+    "projectName": "siscom-api",
+    "projectPath": "/home/chch/Code/siscom-api",
+    "testIds": [],
+    "additionalInstruction": "Genera pruebas automatizadas para todos los endpoints de la API SISCOM. Enfócate en análisis estático del código y validación de la estructura de la API sin necesidad de ejecutar el servidor. Verifica la correcta implementación de los endpoints, esquemas de datos, autenticación JWT y manejo de errores según la documentación del proyecto.",
+    "envs": {
+      "API_KEY": "sk-user-ZEeaXZUhYy_fgnpykVQsFmInaHs_vkP8fhWEKhgdwENGN_w9HPQxpgMDBqcGPFCZ2eDDB6X0FySamZEnnI54VibnqYLDtiuDhBVCfB6AcHNVVEwz8MPUKUN9NUPtl4DkPvc"
+    }
+  }
+}

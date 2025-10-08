@@ -36,13 +36,42 @@ check-all: lint format-check type-check ## Ejecutar todos los checks
 fix-all: lint-fix format ## Auto-corregir y formatear
 	@echo "✅ Código corregido y formateado!"
 
-test: ## Ejecutar tests
-	@echo "🧪 Ejecutando tests..."
-	pytest
+test: ## Ejecutar todos los tests
+	@echo "🧪 Ejecutando todos los tests..."
+	pytest -v
+
+test-unit: ## Ejecutar solo tests unitarios
+	@echo "🧪 Ejecutando tests unitarios..."
+	pytest -v -m unit
+
+test-integration: ## Ejecutar solo tests de integración
+	@echo "🧪 Ejecutando tests de integración..."
+	pytest -v -m integration
 
 test-cov: ## Ejecutar tests con coverage
 	@echo "🧪 Ejecutando tests con coverage..."
 	pytest --cov=app --cov-report=term-missing --cov-report=html
+	@echo "✅ Reporte HTML generado en: htmlcov/index.html"
+
+test-watch: ## Ejecutar tests en modo watch (requiere pytest-watch)
+	@echo "🧪 Ejecutando tests en modo watch..."
+	ptw -- -v
+
+test-fast: ## Ejecutar tests rápidos (excluir lentos)
+	@echo "🧪 Ejecutando tests rápidos..."
+	pytest -v -m "not slow"
+
+test-auth: ## Ejecutar tests de autenticación
+	@echo "🧪 Ejecutando tests de autenticación..."
+	pytest -v -m auth
+
+test-db: ## Ejecutar tests de base de datos
+	@echo "🧪 Ejecutando tests de base de datos..."
+	pytest -v -m database
+
+test-file: ## Ejecutar tests de un archivo específico (usar FILE=nombre)
+	@echo "🧪 Ejecutando tests de $(FILE)..."
+	pytest -v test/$(FILE)
 
 clean: ## Limpiar archivos temporales
 	@echo "🧹 Limpiando archivos temporales..."
