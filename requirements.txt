@@ -21,6 +21,9 @@ sse-starlette
 # --- Logging y utilidades ---
 loguru
 
+# --- Métricas ---
+aio-statsd
+
 # --- Pruebas y cliente HTTP ---
 pytest
 httpx

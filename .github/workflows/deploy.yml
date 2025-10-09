@@ -59,8 +59,7 @@ jobs:
           file: ./Dockerfile
           push: false
           tags: siscom-api:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          no-cache: true  # ⚠️ TEMPORAL: Desactivar caché para rebuild con aio-statsd
           load: true
 
       - name: Save Docker image
@@ -91,12 +90,15 @@ jobs:
           DB_MAX_CONNECTIONS: ${{ vars.DB_MAX_CONNECTIONS }}
           DB_CONNECTION_TIMEOUT_SECS: ${{ vars.DB_CONNECTION_TIMEOUT_SECS }}
           DB_IDLE_TIMEOUT_SECS: ${{ vars.DB_IDLE_TIMEOUT_SECS }}
+          STATSD_HOST: ${{ vars.STATSD_HOST }}
+          STATSD_PORT: ${{ vars.STATSD_PORT }}
+          STATSD_PREFIX: ${{ vars.STATSD_PREFIX }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           port: ${{ secrets.EC2_SSH_PORT }}
-          envs: IMAGE_NAME,CONTAINER_NAME,DB_HOST,DB_PORT,DB_USERNAME,DB_PASSWORD,DB_DATABASE,DB_MIN_CONNECTIONS,DB_MAX_CONNECTIONS,DB_CONNECTION_TIMEOUT_SECS,DB_IDLE_TIMEOUT_SECS
+          envs: IMAGE_NAME,CONTAINER_NAME,DB_HOST,DB_PORT,DB_USERNAME,DB_PASSWORD,DB_DATABASE,DB_MIN_CONNECTIONS,DB_MAX_CONNECTIONS,DB_CONNECTION_TIMEOUT_SECS,DB_IDLE_TIMEOUT_SECS,STATSD_HOST,STATSD_PORT,STATSD_PREFIX
           script: |
             cd /home/${{ secrets.EC2_USERNAME }}/siscom-api
             
@@ -121,6 +123,9 @@ jobs:
             JWT_ALGORITHM=HS256
             ACCESS_TOKEN_EXPIRE_MINUTES=60
             ALLOWED_ORIGINS=*
+            STATSD_HOST=${STATSD_HOST}
+            STATSD_PORT=${STATSD_PORT}
+            STATSD_PREFIX=${STATSD_PREFIX}
             EOF
             
             # Detener y eliminar el contenedor existente
@@ -131,7 +136,40 @@ jobs:
             
             # Esperar a que el contenedor esté saludable
             echo "Esperando a que el contenedor esté saludable..."
-            timeout 60s bash -c 'until docker inspect --format="{{.State.Health.Status}}" ${CONTAINER_NAME} | grep -q "healthy"; do sleep 2; done' || echo "Warning: Container health check timed out"
+            CONTAINER_HEALTHY=false
+            for i in {1..30}; do
+              STATUS=$(docker inspect --format="{{.State.Health.Status}}" ${CONTAINER_NAME} 2>/dev/null || echo "not_found")
+              echo "Intento $i/30: Status = $STATUS"
+              
+              if [ "$STATUS" = "healthy" ]; then
+                echo "✅ Contenedor está healthy!"
+                CONTAINER_HEALTHY=true
+                break
+              elif [ "$STATUS" = "unhealthy" ]; then
+                echo "❌ ERROR: Contenedor está unhealthy"
+                echo "Logs del contenedor:"
+                docker logs --tail 50 ${CONTAINER_NAME}
+                exit 1
+              fi
+              
+              sleep 2
+            done
+            
+            if [ "$CONTAINER_HEALTHY" = false ]; then
+              echo "❌ ERROR: Timeout esperando que el contenedor esté healthy"
+              echo "Estado actual: $(docker inspect --format="{{.State.Status}}" ${CONTAINER_NAME})"
+              echo "Logs del contenedor:"
+              docker logs --tail 50 ${CONTAINER_NAME}
+              exit 1
+            fi
+            
+            # Verificar logs en busca de errores críticos
+            echo "Verificando logs en busca de errores..."
+            if docker logs ${CONTAINER_NAME} 2>&1 | grep -q "Application startup failed"; then
+              echo "❌ ERROR: La aplicación falló al iniciar"
+              docker logs --tail 50 ${CONTAINER_NAME}
+              exit 1
+            fi
             
             # Limpiar imágenes antiguas
             docker image prune -f
@@ -139,7 +177,7 @@ jobs:
             # Eliminar el archivo tar.gz
             rm -f siscom-api.tar.gz
             
-            echo "Deployment completed successfully!"
+            echo "✅ Deployment completado exitosamente!"
 
       - name: Verify deployment
         uses: appleboy/ssh-action@v1.0.3
@@ -149,7 +187,67 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: ${{ secrets.EC2_SSH_PORT }}
           script: |
-            docker ps | grep siscom-api
+            echo "=== Verificación Final del Deployment ==="
+            echo ""
+            
+            # Verificar que el contenedor está corriendo
+            echo "1. Estado del contenedor:"
+            if ! docker ps | grep siscom-api; then
+              echo "❌ ERROR: El contenedor siscom-api no está corriendo"
+              exit 1
+            fi
+            echo "✅ Contenedor corriendo"
+            echo ""
+            
+            # Verificar health status
+            echo "2. Health status:"
+            HEALTH_STATUS=$(docker inspect --format="{{.State.Health.Status}}" siscom-api)
+            echo "Status: $HEALTH_STATUS"
+            if [ "$HEALTH_STATUS" != "healthy" ]; then
+              echo "❌ ERROR: Contenedor no está healthy"
+              exit 1
+            fi
+            echo "✅ Contenedor healthy"
+            echo ""
+            
+            # Verificar que no hay errores críticos en logs
+            echo "3. Verificando logs recientes:"
+            RECENT_LOGS=$(docker logs --tail 50 siscom-api 2>&1)
+            
+            if echo "$RECENT_LOGS" | grep -q "Application startup failed"; then
+              echo "❌ ERROR: Aplicación falló al iniciar"
+              echo "$RECENT_LOGS"
+              exit 1
+            fi
+            
+            if echo "$RECENT_LOGS" | grep -q "ModuleNotFoundError"; then
+              echo "❌ ERROR: Módulo faltante"
+              echo "$RECENT_LOGS"
+              exit 1
+            fi
+            
+            if echo "$RECENT_LOGS" | grep -E "ERROR.*Exiting" | grep -v "test"; then
+              echo "❌ ERROR: Error crítico encontrado en logs"
+              echo "$RECENT_LOGS"
+              exit 1
+            fi
+            
+            echo "✅ No se encontraron errores críticos"
+            echo ""
+            
+            # Verificar que el health endpoint responde
+            echo "4. Verificando health endpoint:"
+            CONTAINER_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' siscom-api)
+            if curl -f -s http://localhost:8000/health > /dev/null 2>&1 || curl -f -s http://$CONTAINER_IP:8000/health > /dev/null 2>&1; then
+              echo "✅ Health endpoint responde correctamente"
+            else
+              echo "⚠️  Warning: No se pudo verificar el health endpoint (puede ser normal si hay firewall)"
+            fi
+            echo ""
+            
+            echo "🎉 Deployment verificado exitosamente!"
+            echo ""
+            echo "=== Últimos logs (informativos) ==="
             docker logs --tail 20 siscom-api
 
       - name: Notification on failure

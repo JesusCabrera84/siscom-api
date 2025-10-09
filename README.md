@@ -13,6 +13,7 @@ API FastAPI para gestión de comunicaciones de dispositivos GPS (Suntech y Quecl
 - ✅ CORS configurable
 - ✅ Docker y Docker Compose
 - ✅ CI/CD con GitHub Actions
+- ✅ Métricas StatsD con aio-statsd para Telegraf/InfluxDB
 
 ## 📋 Requisitos
 
@@ -71,6 +72,11 @@ JWT_ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=60
 
 ALLOWED_ORIGINS=*
+
+# Métricas StatsD (opcional)
+STATSD_HOST=localhost
+STATSD_PORT=8126
+STATSD_PREFIX=siscom_api
 ```
 
 ### 5. Ejecutar la aplicación:
@@ -222,12 +228,15 @@ docker compose up -d
 
 ## 📚 Documentación de la API
 
+📁 **[docs/](docs/)** - Toda la documentación está organizada en la carpeta `docs/`
+
 ### 🚀 Guías y Documentación
 
-- **[📘 API REST Guide](API_REST_GUIDE.md)** - Documentación completa de todos los endpoints REST v1
-- **[🔄 Migration Guide](MIGRATION_REST.md)** - Guía rápida de migración a REST v1
-- **[📮 Postman Examples](POSTMAN_EXAMPLES.md)** - Ejemplos con cURL, Postman y JavaScript
+- **[📘 API REST Guide](docs/API_REST_GUIDE.md)** - Documentación completa de todos los endpoints REST v1
+- **[🔄 Migration Guide](docs/MIGRATION_REST.md)** - Guía rápida de migración a REST v1
+- **[📮 Postman Examples](docs/POSTMAN_EXAMPLES.md)** - Ejemplos con cURL, Postman y JavaScript
 - **[📖 Swagger UI](http://localhost:8000/api/docs)** - Documentación interactiva (cuando el servidor esté corriendo)
+- **[📑 Índice Completo](docs/DOCS_INDEX.md)** - Navegación organizada por temas y casos de uso
 
 ### Endpoints REST v1
 
@@ -279,16 +288,34 @@ siscom-api/
 │   ├── core/
 │   │   ├── config.py        # Configuración
 │   │   ├── database.py      # Conexión a DB
+│   │   ├── middleware.py    # Middleware de métricas
 │   │   └── security.py      # JWT y autenticación
 │   ├── models/              # Modelos SQLAlchemy
 │   ├── services/            # Lógica de negocio
-│   ├── utils/               # Utilidades
+│   ├── utils/
+│   │   ├── exceptions.py    # Excepciones personalizadas
+│   │   ├── logger.py        # Logging
+│   │   └── metrics.py       # Cliente aio-statsd
 │   └── main.py              # Aplicación principal
+├── docs/                    # 📚 Toda la documentación
+│   ├── README.md            # Índice de documentación
+│   ├── DOCS_INDEX.md        # Navegación detallada
+│   ├── API_REST_GUIDE.md    # Guía completa de API
+│   ├── MIGRATION_REST.md    # Guía de migración
+│   ├── POSTMAN_EXAMPLES.md  # Ejemplos de código
+│   ├── DEPLOYMENT.md        # Guía de despliegue
+│   ├── GITHUB_VARIABLES.md  # Config de variables
+│   ├── METRICS.md           # Doc de métricas
+│   ├── QUICKSTART_METRICS.md # Guía rápida métricas
+│   └── ...                  # Más documentación
+├── test/                    # Tests unitarios e integración
 ├── .github/
 │   └── workflows/
 │       └── deploy.yml       # CI/CD pipeline
 ├── Dockerfile
 ├── docker-compose.yml
+├── telegraf-statsd.conf     # Configuración Telegraf
+├── test_metrics.py          # Script de prueba de métricas
 ├── requirements.txt
 └── README.md
 ```
@@ -303,7 +330,9 @@ siscom-api/
 
 ## 🚢 Despliegue
 
-Ver [DEPLOYMENT.md](DEPLOYMENT.md) para instrucciones detalladas de despliegue en EC2 con GitHub Actions.
+Ver documentación completa de despliegue:
+- [DEPLOYMENT.md](docs/DEPLOYMENT.md) - Instrucciones detalladas de despliegue en EC2 con GitHub Actions
+- [GITHUB_VARIABLES.md](docs/GITHUB_VARIABLES.md) - Configuración de variables de entorno en GitHub (incluye STATSD_*)
 
 ## 📊 Modelos de Datos
 
@@ -392,6 +421,66 @@ open htmlcov/index.html       # macOS
 
 Ver documentación completa en [test/README.md](test/README.md)
 
+## 📊 Métricas y Monitoreo
+
+La API envía métricas automáticamente a Telegraf usando el protocolo StatsD con **aio-statsd** (librería asíncrona optimizada para FastAPI).
+
+### Métricas Disponibles
+
+1. **Peticiones por minuto** (`siscom_api.requests`)
+   - Contador de todas las peticiones HTTP
+   - Tag: `app=siscom-api`
+
+2. **Latencia del endpoint /stream** (`siscom_api.latency.stream`)
+   - Tiempo de respuesta en milisegundos
+   - Genera percentiles (p50, p90, p95, p99) y media
+   - Tag: `app=siscom-api`
+
+3. **Conexiones SSE activas** (`siscom_api.sse.active_connections`)
+   - Número actual de conexiones Server-Sent Events
+   - Tag: `app=siscom-api`
+
+### Configuración
+
+Agrega estas variables a tu `.env`:
+```env
+STATSD_HOST=localhost
+STATSD_PORT=8126
+STATSD_PREFIX=siscom_api
+```
+
+### Uso con Telegraf
+
+1. Copia el archivo de configuración de ejemplo:
+   ```bash
+   cp telegraf-statsd.conf /path/to/telegraf/telegraf.conf
+   ```
+
+2. Configura las variables de InfluxDB en Telegraf
+
+3. Inicia Telegraf:
+   ```bash
+   docker run -d --name telegraf \
+     -p 8125:8125/udp \
+     -v $(pwd)/telegraf-statsd.conf:/etc/telegraf/telegraf.conf:ro \
+     telegraf:latest
+   ```
+
+4. Prueba las métricas:
+   ```bash
+   python test_metrics.py
+   ```
+
+### Ventajas de aio-statsd
+
+- ✅ **Asíncrono:** Completamente integrado con FastAPI y asyncio
+- ✅ **Sin bloqueo:** No afecta el rendimiento del event loop
+- ✅ **Automático:** Conexión y desconexión manejadas en el lifecycle de la app
+- ✅ **Tags nativos:** Formato InfluxDB optimizado
+- ✅ **Robusto:** Maneja errores de red sin impactar la aplicación
+
+Ver documentación completa en [METRICS.md](docs/METRICS.md) y guía rápida en [QUICKSTART_METRICS.md](docs/QUICKSTART_METRICS.md)
+
 ## 📝 Mejoras Sugeridas
 
 ### Implementadas:
@@ -402,13 +491,13 @@ Ver documentación completa en [test/README.md](test/README.md)
 - ✅ GitHub Actions CI/CD
 - ✅ Variables de entorno bien estructuradas
 - ✅ **Suite completa de tests con pytest (50+ tests, ~95% coverage)**
+- ✅ **Métricas StatsD con aio-statsd para Telegraf/InfluxDB**
 
 ### Por Implementar:
 - ⚠️ Logging estructurado con Loguru (archivos utils vacíos)
 - ⚠️ Manejo de excepciones personalizado
 - ⚠️ Rate limiting
 - ⚠️ Caché (Redis) para consultas frecuentes
-- ⚠️ Métricas y monitoreo (Prometheus)
 - ⚠️ Documentación de esquemas con Pydantic
 - ⚠️ Migraciones de base de datos (Alembic)
 - ⚠️ WebSockets o RabbitMQ para eventos en tiempo real

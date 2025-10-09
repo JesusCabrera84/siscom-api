@@ -4,7 +4,7 @@
 
 ¿Primera vez usando la API? Empieza aquí:
 
-1. **[README.md](README.md)** - Descripción general del proyecto e instalación
+1. **[README.md](../README.md)** - Descripción general del proyecto e instalación
 2. **[MIGRATION_REST.md](MIGRATION_REST.md)** - Guía rápida de los cambios REST v1 (5 minutos)
 3. **[Swagger UI](http://localhost:8000/api/docs)** - Documentación interactiva (requiere servidor corriendo)
 
@@ -24,8 +24,24 @@
 
 | Documento | Descripción | Cuándo Leer |
 |-----------|-------------|-------------|
-| [README.md](README.md) | Instalación local y configuración inicial | Al comenzar el proyecto |
+| [README.md](../README.md) | Instalación local y configuración inicial | Al comenzar el proyecto |
 | [DEPLOYMENT.md](DEPLOYMENT.md) | Despliegue en EC2 con GitHub Actions | Para producción |
+| [GITHUB_VARIABLES.md](GITHUB_VARIABLES.md) | Configuración de variables en GitHub | Para configurar CI/CD |
+
+### 📊 Métricas y Monitoreo
+
+| Documento | Descripción | Cuándo Leer |
+|-----------|-------------|-------------|
+| [QUICKSTART_METRICS.md](QUICKSTART_METRICS.md) | Guía rápida de configuración de métricas | Para configurar métricas en 5 minutos |
+| [METRICS.md](METRICS.md) | Documentación completa de métricas StatsD | Para entender el sistema de métricas |
+| [CHANGELOG_METRICS.md](CHANGELOG_METRICS.md) | Cambios en la implementación de métricas | Para ver qué se implementó |
+
+### 🧪 Testing
+
+| Documento | Descripción | Cuándo Leer |
+|-----------|-------------|-------------|
+| [TESTS_GENERADOS.md](TESTS_GENERADOS.md) | Documentación de tests generados | Para entender la suite de tests |
+| [test/README.md](../test/README.md) | Guía de ejecución de tests | Para ejecutar y mantener tests |
 
 ### 📝 Desarrollo y Mejoras
 
@@ -91,11 +107,12 @@
 ### Conceptos Clave
 
 - **REST v1**: [API_REST_GUIDE.md](API_REST_GUIDE.md), [MIGRATION_REST.md](MIGRATION_REST.md)
-- **JWT**: [README.md](README.md#seguridad), [API_REST_GUIDE.md](API_REST_GUIDE.md#autenticación)
+- **JWT**: [README.md](../README.md#seguridad), [API_REST_GUIDE.md](API_REST_GUIDE.md#autenticación)
 - **SSE (Server-Sent Events)**: [API_REST_GUIDE.md](API_REST_GUIDE.md#endpoints-de-server-sent-events-sse---tiempo-real)
 - **Pydantic Schemas**: [MEJORAS_RECOMENDADAS.md](MEJORAS_RECOMENDADAS.md#3-esquemas-pydantic)
 - **Deployment**: [DEPLOYMENT.md](DEPLOYMENT.md)
-- **Docker**: [README.md](README.md#docker)
+- **Docker**: [README.md](../README.md#docker)
+- **Métricas**: [METRICS.md](METRICS.md), [QUICKSTART_METRICS.md](QUICKSTART_METRICS.md)
 
 ### Ejemplos de Código
 
@@ -110,7 +127,8 @@
 - **Error 401**: [API_REST_GUIDE.md](API_REST_GUIDE.md#error-401-token-inválido)
 - **Error 422**: [API_REST_GUIDE.md](API_REST_GUIDE.md#error-422-query-parameter-requerido)
 - **Migración**: [MIGRATION_REST.md](MIGRATION_REST.md#breaking-changes)
-- **Troubleshooting**: [README.md](README.md) sección final
+- **Métricas**: [METRICS.md](METRICS.md#troubleshooting)
+- **Troubleshooting**: [README.md](../README.md) sección final
 
 ---
 
@@ -157,15 +175,17 @@ app/
 ## 🎓 Orden Recomendado de Lectura
 
 ### Para Desarrolladores Nuevos
-1. [README.md](README.md) - Instalación y setup
+1. [README.md](../README.md) - Instalación y setup
 2. [MIGRATION_REST.md](MIGRATION_REST.md) - Entender endpoints REST v1
 3. [POSTMAN_EXAMPLES.md](POSTMAN_EXAMPLES.md) - Ejemplos prácticos
 4. [API_REST_GUIDE.md](API_REST_GUIDE.md) - Documentación completa
 
 ### Para DevOps
-1. [README.md](README.md) - Arquitectura general
+1. [README.md](../README.md) - Arquitectura general
 2. [DEPLOYMENT.md](DEPLOYMENT.md) - Proceso de deployment
-3. [MEJORAS_RECOMENDADAS.md](MEJORAS_RECOMENDADAS.md) - Mejoras de infraestructura
+3. [GITHUB_VARIABLES.md](GITHUB_VARIABLES.md) - Configuración de variables
+4. [QUICKSTART_METRICS.md](QUICKSTART_METRICS.md) - Configuración de métricas
+5. [MEJORAS_RECOMENDADAS.md](MEJORAS_RECOMENDADAS.md) - Mejoras de infraestructura
 
 ### Para Frontend Developers
 1. [MIGRATION_REST.md](MIGRATION_REST.md) - Entender endpoints

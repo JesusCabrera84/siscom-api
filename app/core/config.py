@@ -25,6 +25,13 @@ class Settings(BaseSettings):
     # CORS (opcional)
     ALLOWED_ORIGINS: str = "*"
 
+    # Métricas StatsD
+    STATSD_HOST: str = "localhost"
+    STATSD_PORT: int = (
+        8126  # Puerto dedicado para siscom-api (8125 reservado para otros proyectos)
+    )
+    STATSD_PREFIX: str = "siscom_api"
+
     # Para compatibilidad con código existente que use DATABASE_URL
     @property
     def DATABASE_URL(self) -> str:
