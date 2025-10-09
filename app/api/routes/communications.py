@@ -1,13 +1,14 @@
 import asyncio
 import json
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sse_starlette.sse import EventSourceResponse
 
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.schemas.communications import CommunicationResponse
 from app.services.repository import get_communications
+from app.utils.metrics import metrics_client
 
 router = APIRouter(prefix="/api/v1", tags=["Communications"])
 
@@ -18,7 +19,7 @@ router = APIRouter(prefix="/api/v1", tags=["Communications"])
 
 
 @router.get("/communications", response_model=list[CommunicationResponse])
-async def get_communications_history(
+async def get_communications_history(  # noqa: B008
     device_ids: list[str] = Query(
         ...,
         description="Lista de IDs de dispositivos GPS a consultar",
@@ -80,33 +81,45 @@ async def get_device_communications(
 # ============================================================================
 
 
-async def event_generator(device_ids: list[str]):
+async def event_generator(device_ids: list[str], request: Request):
     """
     Generador de eventos SSE para actualizaciones en tiempo real.
 
     En producción, esto se conectaría a Kafka, Redis Pub/Sub, o similar.
     """
-    while True:
-        # TODO: Conectar con sistema de mensajería en tiempo real (Kafka, Redis, etc.)
-        # Simulación temporal:
-        await asyncio.sleep(2)
-        for device_id in device_ids:
-            yield {
-                "event": "update",
-                "data": json.dumps(
-                    {
-                        "device_id": device_id,
-                        "latitude": 19.4326,
-                        "longitude": -99.1332,
-                        "speed": 45.5,
-                        "timestamp": "2024-01-15T10:30:00",
-                    }
-                ),
-            }
+    # Incrementar conexiones activas al iniciar
+    await metrics_client.increment_active_connections()
+
+    try:
+        while True:
+            # Verificar si el cliente se ha desconectado
+            if await request.is_disconnected():
+                break
+
+            # TODO: Conectar con sistema de mensajería en tiempo real (Kafka, Redis, etc.)
+            # Simulación temporal:
+            await asyncio.sleep(2)
+            for device_id in device_ids:
+                yield {
+                    "event": "update",
+                    "data": json.dumps(
+                        {
+                            "device_id": device_id,
+                            "latitude": 19.4326,
+                            "longitude": -99.1332,
+                            "speed": 45.5,
+                            "timestamp": "2024-01-15T10:30:00",
+                        }
+                    ),
+                }
+    finally:
+        # Decrementar conexiones activas al desconectar
+        await metrics_client.decrement_active_connections()
 
 
 @router.get("/communications/stream")
 async def stream_communications(
+    request: Request,
     device_ids: list[str] = Query(
         ...,
         description="Lista de IDs de dispositivos GPS a monitorear en tiempo real",
@@ -135,13 +148,14 @@ async def stream_communications(
 
     **Nota:** Este endpoint NO requiere autenticación JWT (ajustar según necesidad)
     """
-    generator = event_generator(device_ids)
+    generator = event_generator(device_ids, request)
     return EventSourceResponse(generator)
 
 
 @router.get("/devices/{device_id}/communications/stream")
 async def stream_device_communications(
     device_id: str,
+    request: Request,
 ):
     """
     Suscripción SSE para recibir actualizaciones en tiempo real de UN solo dispositivo.
@@ -163,5 +177,5 @@ async def stream_device_communications(
 
     **Nota:** Este endpoint NO requiere autenticación JWT (ajustar según necesidad)
     """
-    generator = event_generator([device_id])
+    generator = event_generator([device_id], request)
     return EventSourceResponse(generator)
