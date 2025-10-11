@@ -1,0 +1,8 @@
+{
+    "typeCheckingMode": "basic",
+    "reportMissingImports": true,
+    "reportUndefinedVariable": true,
+    "reportAttributeAccessIssue": false,
+    "reportMissingModuleSource": false,
+    "reportUnusedFunction": true
+}

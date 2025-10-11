@@ -1,5 +1,5 @@
+# app/utils/metrics.py
 from contextlib import asynccontextmanager
-from typing import Optional
 
 from aio_statsd import StatsdClient
 
@@ -7,56 +7,74 @@ from app.core.config import settings
 
 
 class MetricsClient:
-    """Cliente asíncrono para enviar métricas a StatsD/Telegraf."""
+    """Cliente asíncrono robusto para enviar métricas a StatsD/Telegraf."""
 
     def __init__(self):
-        self.client: Optional[StatsdClient] = None
+        self.client: StatsdClient | None = None
         self.prefix = settings.STATSD_PREFIX or "siscom_api"
 
-    async def connect(self):
-        """Conecta al servidor StatsD."""
-        if self.client is None:
+    async def ensure_connected(self):
+        """Reconecta el cliente si está cerrado o no inicializado."""
+        if self.client is None or getattr(self.client, "_closed", False):
             self.client = StatsdClient(
                 host=settings.STATSD_HOST,
                 port=settings.STATSD_PORT,
             )
+            await self.client.connect()
 
     async def close(self):
         """Cierra la conexión con StatsD."""
-        if self.client:
+        if self.client and not getattr(self.client, "_closed", False):
             await self.client.close()
             self.client = None
 
-    async def increment_requests(self, endpoint: str = None):
-        """Incrementa el contador de peticiones por minuto."""
-        if self.client:
-            await self.client.increment(f"{self.prefix}.requests", 1)
+    async def increment_requests(self, endpoint: str | None = None):
+        """Incrementa el contador de peticiones."""
+        try:
+            await self.ensure_connected()
+            metric = f"{self.prefix}.requests"
+            if endpoint:
+                metric += f".{endpoint}"
+            assert self.client is not None
+            await self.client.increment(metric, 1)
+        except Exception as e:
+            # Evita que un error en métricas rompa la app
+            print(f"[Metrics] Error incrementing: {e}")
 
     async def timing_latency(self, endpoint: str, duration_ms: float):
-        """Registra la latencia de un endpoint en milisegundos."""
-        if self.client:
-            await self.client.timing(f"{self.prefix}.latency.{endpoint}", duration_ms)
+        """Registra la latencia."""
+        try:
+            await self.ensure_connected()
+            metric = f"{self.prefix}.latency.{endpoint}"
+            assert self.client is not None
+            await self.client.timing(metric, duration_ms)
+        except Exception as e:
+            print(f"[Metrics] Error timing: {e}")
 
     async def increment_active_connections(self):
-        """Incrementa el contador de conexiones SSE activas."""
-        if self.client:
+        try:
+            await self.ensure_connected()
+            assert self.client is not None
             await self.client.increment(f"{self.prefix}.sse.active_connections", 1)
+        except Exception as e:
+            print(f"[Metrics] Error incrementing SSE: {e}")
 
     async def decrement_active_connections(self):
-        """Decrementa el contador de conexiones SSE activas."""
-        if self.client:
+        try:
+            await self.ensure_connected()
+            assert self.client is not None
             await self.client.decrement(f"{self.prefix}.sse.active_connections", 1)
+        except Exception as e:
+            print(f"[Metrics] Error decrementing SSE: {e}")
 
 
-# Instancia global del cliente de métricas
 metrics_client = MetricsClient()
 
 
 @asynccontextmanager
 async def get_metrics_client():
-    """Context manager para obtener el cliente de métricas."""
-    await metrics_client.connect()
+    await metrics_client.ensure_connected()
     try:
         yield metrics_client
     finally:
-        pass  # No cerramos aquí, se cierra en el shutdown de la app
+        pass  # Se cierra globalmente en shutdown si se desea

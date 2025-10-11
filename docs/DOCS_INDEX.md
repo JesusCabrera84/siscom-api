@@ -34,7 +34,9 @@
 |-----------|-------------|-------------|
 | [QUICKSTART_METRICS.md](QUICKSTART_METRICS.md) | Guía rápida de configuración de métricas | Para configurar métricas en 5 minutos |
 | [METRICS.md](METRICS.md) | Documentación completa de métricas StatsD | Para entender el sistema de métricas |
+| [DEBUG_METRICS.md](DEBUG_METRICS.md) | **Debugging de métricas y peticiones** | **Para investigar incrementos inesperados** |
 | [CHANGELOG_METRICS.md](CHANGELOG_METRICS.md) | Cambios en la implementación de métricas | Para ver qué se implementó |
+| [AGREGAR_A_TELEGRAF.md](AGREGAR_A_TELEGRAF.md) | Cómo agregar siscom-api a Telegraf existente | Para integrar con tu Telegraf actual |
 
 ### 🧪 Testing
 
@@ -128,6 +130,7 @@
 - **Error 422**: [API_REST_GUIDE.md](API_REST_GUIDE.md#error-422-query-parameter-requerido)
 - **Migración**: [MIGRATION_REST.md](MIGRATION_REST.md#breaking-changes)
 - **Métricas**: [METRICS.md](METRICS.md#troubleshooting)
+- **Métricas Inesperadas**: [DEBUG_METRICS.md](DEBUG_METRICS.md) ⭐
 - **Troubleshooting**: [README.md](../README.md) sección final
 
 ---

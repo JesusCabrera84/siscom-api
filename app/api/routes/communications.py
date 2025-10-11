@@ -5,7 +5,6 @@ from fastapi import APIRouter, Depends, Query, Request
 from sse_starlette.sse import EventSourceResponse
 
 from app.core.database import get_db
-from app.core.security import get_current_user
 from app.schemas.communications import CommunicationResponse
 from app.services.repository import get_communications
 from app.utils.metrics import metrics_client
@@ -28,7 +27,6 @@ async def get_communications_history(  # noqa: B008
         example=["867564050638581", "DEVICE123"],
     ),
     db=Depends(get_db),
-    user=Depends(get_current_user),
 ):
     """
     Obtiene el histórico de comunicaciones de múltiples dispositivos GPS.
@@ -55,7 +53,6 @@ async def get_communications_history(  # noqa: B008
 async def get_device_communications(
     device_id: str,
     db=Depends(get_db),
-    user=Depends(get_current_user),
 ):
     """
     Obtiene el histórico de comunicaciones de UN solo dispositivo GPS.

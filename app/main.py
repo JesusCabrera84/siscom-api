@@ -10,10 +10,10 @@ from app.utils.metrics import metrics_client
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     """Manejo del ciclo de vida de la aplicación."""
     # Startup: Conectar cliente de métricas
-    await metrics_client.connect()
+    await metrics_client.ensure_connected()
     yield
     # Shutdown: Cerrar cliente de métricas
     await metrics_client.close()

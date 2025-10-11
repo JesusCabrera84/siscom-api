@@ -26,6 +26,11 @@ services:
       
       # CORS
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-*}
+      
+      # Métricas StatsD
+      STATSD_HOST: ${STATSD_HOST:-localhost}
+      STATSD_PORT: ${STATSD_PORT:-8126}
+      STATSD_PREFIX: ${STATSD_PREFIX:-siscom_api}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
       interval: 30s

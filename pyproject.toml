@@ -38,6 +38,11 @@ select = [
     "I",  # isort
     "C",  # flake8-comprehensions
     "B",  # flake8-bugbear
+    "UP",  # unused-promises
+    "PL",  # pep8-naming
+    "SIM",  # simplify-imports
+    "ERA",
+    "ARG",
 ]
 ignore = [
     "E501",  # line too long, handled by black
