@@ -14,12 +14,14 @@ Los endpoints han sido migrados a seguir las **mejores prácticas REST**:
 
 ## 📋 Tabla de Endpoints
 
-| Endpoint                                                | Método | Auth   | Descripción                          |
-| ------------------------------------------------------- | ------ | ------ | ------------------------------------ |
-| `GET /api/v1/communications`                            | GET    | ✅ JWT | Histórico de múltiples dispositivos  |
-| `GET /api/v1/communications/stream`                     | GET    | ❌ No  | Stream SSE de múltiples dispositivos |
-| `GET /api/v1/devices/{device_id}/communications`        | GET    | ✅ JWT | Histórico de un solo dispositivo     |
-| `GET /api/v1/devices/{device_id}/communications/stream` | GET    | ❌ No  | Stream SSE de un solo dispositivo    |
+| Endpoint                                                | Método | Auth   | Descripción                                |
+| ------------------------------------------------------- | ------ | ------ | ------------------------------------------ |
+| `GET /api/v1/communications`                            | GET    | ✅ JWT | Histórico de múltiples dispositivos        |
+| `GET /api/v1/communications/latest`                     | GET    | ✅ JWT | Última comunicación de múltiples devices   |
+| `GET /api/v1/communications/stream`                     | GET    | ❌ No  | Stream SSE de múltiples dispositivos       |
+| `GET /api/v1/devices/{device_id}/communications`        | GET    | ✅ JWT | Histórico de un solo dispositivo           |
+| `GET /api/v1/devices/{device_id}/communications/latest` | GET    | ✅ JWT | Última comunicación de un solo dispositivo |
+| `GET /api/v1/devices/{device_id}/communications/stream` | GET    | ❌ No  | Stream SSE de un solo dispositivo          |
 
 ---
 
@@ -146,7 +148,185 @@ const data = await response.json();
 
 ---
 
-### 3️⃣ GET /api/v1/communications/stream
+### 3️⃣ GET /api/v1/communications/latest
+
+Obtener la última comunicación de múltiples dispositivos GPS
+
+#### Request - Última Comunicación de Múltiples Dispositivos
+
+```http
+GET /api/v1/communications/latest?device_ids=867564050638581&device_ids=DEVICE123
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
+```
+
+#### Query Parameters
+
+| Parámetro    | Tipo          | Requerido | Descripción                                     |
+| ------------ | ------------- | --------- | ----------------------------------------------- |
+| `device_ids` | array[string] | ✅ Sí     | Lista de IDs de dispositivos (mín: 1, máx: 100) |
+
+#### Ejemplo con cURL
+
+```bash
+curl --location 'http://10.8.0.1:8000/api/v1/communications/latest?device_ids=867564050638581&device_ids=DEVICE123' \
+--header 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.e30.XmNK3GpH3Ys_7wsYBfq4C3M6goz71I7dTgUkuIa5lyQ'
+```
+
+#### Ejemplo con JavaScript
+
+```javascript
+const response = await fetch(
+  "http://10.8.0.1:8000/api/v1/communications/latest?device_ids=867564050638581&device_ids=DEVICE123",
+  {
+    headers: {
+      Authorization: "Bearer eyJhbGciOiJIUzI1NiJ9...",
+    },
+  },
+);
+
+const data = await response.json();
+```
+
+#### Response (200 OK)
+
+```json
+[
+  {
+    "device_id": "867564050638581",
+    "latitude": 19.4326,
+    "longitude": -99.1332,
+    "speed": 45.5,
+    "course": 180.0,
+    "gps_datetime": "2024-01-15T10:30:00",
+    "gps_epoch": 1705318200,
+    "main_battery_voltage": 12.5,
+    "backup_battery_voltage": 3.7,
+    "odometer": 15000,
+    "engine_status": "ON",
+    "fix_status": "VALID",
+    "satellites": 12,
+    "rx_lvl": -65,
+    "network_status": "CONNECTED",
+    "msg_class": "HEARTBEAT",
+    "delivery_type": "GPRS",
+    "received_epoch": 1705318201,
+    "received_at": "2024-01-15T10:30:01",
+    "alert_type": null
+  },
+  {
+    "device_id": "DEVICE123",
+    "latitude": 19.4327,
+    "longitude": -99.1333,
+    "speed": 50.0,
+    "satellites": 10,
+    ...
+  }
+]
+```
+
+**📝 Nota:** El endpoint `/latest` usa la tabla `communications_current_state`, por lo que:
+
+- ❌ No incluye el campo `id` (device_id es la clave primaria)
+- ✅ Incluye campos adicionales como `satellites`, `rx_lvl`, `gps_epoch`, etc.
+
+**💡 Diferencias clave:**
+
+- `GET /communications` → Retorna TODO el histórico (puede ser miles de registros)
+- `GET /communications/latest` → Retorna SOLO la última comunicación de cada dispositivo
+- `GET /communications/stream` → Conexión persistente con actualizaciones continuas
+
+**🎯 Caso de uso:** Ideal para dashboards que necesitan mostrar la posición/estado actual de múltiples dispositivos en un mapa sin cargar todo el histórico.
+
+---
+
+### 4️⃣ GET /api/v1/devices/{device_id}/communications/latest
+
+Obtener la última comunicación de UN solo dispositivo GPS
+
+#### Request - Última Comunicación de Un Dispositivo
+
+```http
+GET /api/v1/devices/867564050638581/communications/latest
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
+```
+
+#### Path Parameters
+
+| Parámetro   | Tipo   | Requerido | Descripción            |
+| ----------- | ------ | --------- | ---------------------- |
+| `device_id` | string | ✅ Sí     | ID del dispositivo GPS |
+
+#### Ejemplo con cURL
+
+```bash
+curl --location 'http://10.8.0.1:8000/api/v1/devices/867564050638581/communications/latest' \
+--header 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.e30.XmNK3GpH3Ys_7wsYBfq4C3M6goz71I7dTgUkuIa5lyQ'
+```
+
+#### Ejemplo con JavaScript
+
+```javascript
+const deviceId = "867564050638581";
+const response = await fetch(
+  `http://10.8.0.1:8000/api/v1/devices/${deviceId}/communications/latest`,
+  {
+    headers: {
+      Authorization: "Bearer eyJhbGciOiJIUzI1NiJ9...",
+    },
+  },
+);
+
+const data = await response.json();
+```
+
+#### Response (200 OK)
+
+```json
+{
+  "device_id": "867564050638581",
+  "latitude": 19.4326,
+  "longitude": -99.1332,
+  "speed": 45.5,
+  "course": 180.0,
+  "gps_datetime": "2024-01-15T10:30:00",
+  "gps_epoch": 1705318200,
+  "main_battery_voltage": 12.5,
+  "backup_battery_voltage": 3.7,
+  "odometer": 15000,
+  "engine_status": "ON",
+  "fix_status": "VALID",
+  "satellites": 12,
+  "rx_lvl": -65,
+  "network_status": "CONNECTED",
+  "msg_class": "HEARTBEAT",
+  "delivery_type": "GPRS",
+  "received_epoch": 1705318201,
+  "received_at": "2024-01-15T10:30:01",
+  "alert_type": null
+}
+```
+
+**📝 Nota:** Sin campo `id`, incluye `satellites` y otros campos adicionales.
+
+#### Response (404 Not Found)
+
+```json
+{
+  "detail": "No se encontró comunicación para el dispositivo 867564050638581"
+}
+```
+
+**💡 Diferencias clave:**
+
+- `GET /devices/{id}/communications` → Retorna TODO el histórico del dispositivo
+- `GET /devices/{id}/communications/latest` → Retorna SOLO la última comunicación
+- `GET /devices/{id}/communications/stream` → Stream en tiempo real del dispositivo
+
+**🎯 Caso de uso:** Ideal para consultar rápidamente el estado actual de un dispositivo específico (última posición, batería, velocidad, etc.).
+
+---
+
+### 5️⃣ GET /api/v1/communications/stream
 
 Suscripción SSE para múltiples dispositivos en tiempo real
 
@@ -211,7 +391,7 @@ data: {"device_id": "DEVICE123", "latitude": 19.4327, "longitude": -99.1333, "sp
 
 ---
 
-### 4️⃣ GET /api/v1/devices/{device_id}/communications/stream
+### 6️⃣ GET /api/v1/devices/{device_id}/communications/stream
 
 Suscripción SSE para UN solo dispositivo en tiempo real
 
@@ -316,14 +496,16 @@ curl http://10.8.0.1:8000/api/v1/communications?device_ids=867564050638581 \
 ```plaintext
 /api/v1/
   ├── communications/              (colección)
-  │   ├── GET  → lista múltiples
-  │   └── stream/  → stream múltiples
+  │   ├── GET         → histórico completo de múltiples
+  │   ├── latest/     → última comunicación de múltiples
+  │   └── stream/     → stream tiempo real múltiples
   │
   └── devices/
       └── {device_id}/             (recurso individual)
           └── communications/
-              ├── GET  → lista uno
-              └── stream/  → stream uno
+              ├── GET         → histórico completo del dispositivo
+              ├── latest/     → última comunicación del dispositivo
+              └── stream/     → stream tiempo real del dispositivo
 ```
 
 ### ✅ 4. Query Parameters para Filtros
@@ -344,12 +526,77 @@ Claridad semántica: "las comunicaciones del dispositivo X"
 
 ---
 
+## 🎯 Casos de Uso - ¿Cuál endpoint usar?
+
+### 📊 Histórico (`/communications`)
+
+**Cuándo usar:**
+
+- Necesitas analizar datos históricos completos
+- Generar reportes de trayectorias
+- Análisis de comportamiento del dispositivo
+- Exportar datos para auditoría
+
+```javascript
+// Ejemplo: Obtener todo el historial de un vehículo
+const history = await fetch('/api/v1/devices/867564050638581/communications');
+```
+
+### 📍 Estado Actual (`/communications/latest`)
+
+**Cuándo usar:**
+
+- Mostrar posiciones actuales en un mapa/dashboard
+- Ver el estado actual de múltiples dispositivos
+- Consultas rápidas sin cargar todo el histórico
+- Widgets de estado/resumen
+
+```javascript
+// Ejemplo: Mostrar posición actual de todos los vehículos en un mapa
+const currentPositions = await fetch('/api/v1/communications/latest?device_ids=X&device_ids=Y');
+// Retorna SOLO la última posición de cada uno
+```
+
+### 🔴 Tiempo Real (`/communications/stream`)
+
+**Cuándo usar:**
+
+- Monitoreo en vivo/tiempo real
+- Seguimiento activo de vehículos en operación
+- Alertas instantáneas
+- Dashboards de control en vivo
+
+```javascript
+// Ejemplo: Seguimiento en tiempo real
+const eventSource = new EventSource('/api/v1/communications/stream?device_ids=X');
+eventSource.addEventListener('update', (e) => {
+  // Actualiza la UI automáticamente con cada nueva comunicación
+});
+```
+
+### 📊 Comparación Rápida
+
+| Característica  | `/communications`          | `/communications/latest`      | `/communications/stream` |
+| --------------- | -------------------------- | ----------------------------- | ------------------------ |
+| Tipo            | Histórico completo         | Snapshot actual               | Tiempo real continuo     |
+| Tabla origen    | `suntech` + `queclink`     | `current_state`               | N/A (stream)             |
+| Datos           | Todos los registros        | Solo el más reciente          | Stream actualizaciones   |
+| Incluye `id`    | ✅ Sí                      | ❌ No (PK: `device_id`)       | N/A                      |
+| Campo extra     | `trip_distance`, etc.      | `satellites`, `rx_lvl`, etc.  | N/A                      |
+| Frecuencia      | Bajo demanda               | Bajo demanda                  | Continuo                 |
+| Rendimiento     | Lento (muchos datos)       | ⚡ Rápido (pocos datos)        | N/A (streaming)          |
+| Uso recomendado | Reportes, análisis         | Dashboards, mapas             | Monitoreo en vivo        |
+
+---
+
 ## 🔐 Autenticación
 
 ### Endpoints con JWT
 
 - `GET /api/v1/communications`
+- `GET /api/v1/communications/latest`
 - `GET /api/v1/devices/{device_id}/communications`
+- `GET /api/v1/devices/{device_id}/communications/latest`
 
 ```bash
 Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
@@ -417,7 +664,74 @@ Verás:
 
 ## 🚀 Ejemplos de Integración Frontend (Svelte)
 
-### Histórico de Dispositivos
+### 1. Obtener Última Posición (Latest)
+
+```svelte
+<script>
+  import { onMount } from 'svelte';
+
+  let currentPositions = [];
+  let loading = false;
+
+  async function fetchLatestPositions(deviceIds) {
+    loading = true;
+    
+    try {
+      const params = new URLSearchParams();
+      deviceIds.forEach(id => params.append('device_ids', id));
+
+      const response = await fetch(
+        `http://10.8.0.1:8000/api/v1/communications/latest?${params}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${$authToken}`
+          }
+        }
+      );
+
+      if (!response.ok) throw new Error('Error al cargar posiciones');
+
+      currentPositions = await response.json();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      loading = false;
+    }
+  }
+
+  onMount(() => {
+    // Obtener posición actual de todos los vehículos
+    fetchLatestPositions(['867564050638581', 'DEVICE123']);
+    
+    // Actualizar cada 30 segundos
+    const interval = setInterval(() => {
+      fetchLatestPositions(['867564050638581', 'DEVICE123']);
+    }, 30000);
+
+    return () => clearInterval(interval);
+  });
+</script>
+
+{#if loading}
+  <p>Cargando posiciones...</p>
+{:else}
+  <div class="map-view">
+    {#each currentPositions as pos}
+      <div class="marker" data-device="{pos.device_id}">
+        📍 {pos.device_id}
+        <br>
+        Lat: {pos.latitude}, Lon: {pos.longitude}
+        <br>
+        Velocidad: {pos.speed} km/h
+        <br>
+        <small>{pos.gps_datetime}</small>
+      </div>
+    {/each}
+  </div>
+{/if}
+```
+
+### 2. Histórico de Dispositivos
 
 ```svelte
 <script>
@@ -474,7 +788,7 @@ Verás:
 {/if}
 ```
 
-### Stream en Tiempo Real
+### 3. Stream en Tiempo Real
 
 ```svelte
 <script>

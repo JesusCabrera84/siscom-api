@@ -60,3 +60,40 @@ class CommunicationQueclink(Base, CommunicationBase):
     __tablename__ = "communications_queclink"
 
     id = Column(Integer, primary_key=True, index=True)
+
+
+class CommunicationCurrentState(Base):
+    """
+    Tabla para el estado actual (última comunicación) de los dispositivos.
+
+    Esta tabla materializada contiene la comunicación más reciente de cada dispositivo,
+    optimizada para consultas rápidas de estado actual.
+
+    Nota: device_id es la clave primaria (no existe campo id).
+    """
+
+    __tablename__ = "communications_current_state"
+
+    # Primary Key
+    device_id = Column(String, primary_key=True, index=True)
+
+    # Campos del estado actual
+    backup_battery_voltage = Column(Numeric)
+    course = Column(Numeric)
+    delivery_type = Column(String)
+    engine_status = Column(String)
+    fix_status = Column(String)
+    gps_datetime = Column(DateTime)
+    gps_epoch = Column(BigInteger)
+    latitude = Column(Numeric)
+    longitude = Column(Numeric)
+    main_battery_voltage = Column(Numeric)
+    msg_class = Column(String)
+    network_status = Column(String)
+    odometer = Column(BigInteger)
+    rx_lvl = Column(Integer)
+    satellites = Column(Integer)
+    speed = Column(Numeric)
+    received_epoch = Column(BigInteger)
+    received_at = Column(DateTime)
+    alert_type = Column(String)
