@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -7,6 +8,15 @@ from app.api.routes import communications
 from app.core.config import settings
 from app.core.middleware import MetricsMiddleware
 from app.utils.metrics import metrics_client
+
+# Configurar logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+
+# Asegurar que el middleware tenga logging activado
+logging.getLogger("app.core.middleware").setLevel(logging.INFO)
 
 
 @asynccontextmanager

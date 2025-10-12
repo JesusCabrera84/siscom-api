@@ -12,6 +12,7 @@ class MetricsClient:
     def __init__(self):
         self.client: StatsdClient | None = None
         self.prefix = settings.STATSD_PREFIX or "siscom_api"
+        self._active_connections = 0  # Contador interno para gauge de SSE
 
     async def ensure_connected(self):
         """Reconecta el cliente si está cerrado o no inicializado."""
@@ -29,14 +30,18 @@ class MetricsClient:
             self.client = None
 
     async def increment_requests(self, endpoint: str | None = None):
-        """Incrementa el contador de peticiones."""
+        """Incrementa el contador de peticiones (COUNTER - acumulativo).
+
+        Perfecto para ver requests totales en períodos de tiempo en Grafana.
+        Ej: requests por minuto, requests totales por hora, etc.
+        """
         try:
             await self.ensure_connected()
             metric = f"{self.prefix}.requests"
             if endpoint:
                 metric += f".{endpoint}"
             assert self.client is not None
-            await self.client.increment(metric, 1)
+            self.client.counter(metric, 1)  # Counter para métricas acumulativas
         except Exception as e:
             # Evita que un error en métricas rompa la app
             print(f"[Metrics] Error incrementing: {e}")
@@ -47,23 +52,35 @@ class MetricsClient:
             await self.ensure_connected()
             metric = f"{self.prefix}.latency.{endpoint}"
             assert self.client is not None
-            await self.client.timing(metric, duration_ms)
+            self.client.timing(metric, duration_ms)  # ⚠️ NO es async
         except Exception as e:
             print(f"[Metrics] Error timing: {e}")
 
     async def increment_active_connections(self):
+        """Incrementa conexiones SSE activas (GAUGE - valor actual).
+
+        Usa gauge para reportar el número ACTUAL de conexiones en tiempo real.
+        Perfecto para monitorear carga actual en Grafana.
+        """
         try:
             await self.ensure_connected()
             assert self.client is not None
-            await self.client.increment(f"{self.prefix}.sse.active_connections", 1)
+            self._active_connections += 1
+            self.client.gauge(
+                f"{self.prefix}.sse.active_connections", self._active_connections
+            )
         except Exception as e:
             print(f"[Metrics] Error incrementing SSE: {e}")
 
     async def decrement_active_connections(self):
+        """Decrementa conexiones SSE activas (GAUGE - valor actual)."""
         try:
             await self.ensure_connected()
             assert self.client is not None
-            await self.client.decrement(f"{self.prefix}.sse.active_connections", 1)
+            self._active_connections = max(0, self._active_connections - 1)
+            self.client.gauge(
+                f"{self.prefix}.sse.active_connections", self._active_connections
+            )
         except Exception as e:
             print(f"[Metrics] Error decrementing SSE: {e}")
 

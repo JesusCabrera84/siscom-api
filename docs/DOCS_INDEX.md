@@ -34,7 +34,9 @@
 |-----------|-------------|-------------|
 | [QUICKSTART_METRICS.md](QUICKSTART_METRICS.md) | Guía rápida de configuración de métricas | Para configurar métricas en 5 minutos |
 | [METRICS.md](METRICS.md) | Documentación completa de métricas StatsD | Para entender el sistema de métricas |
-| [DEBUG_METRICS.md](DEBUG_METRICS.md) | **Debugging de métricas y peticiones** | **Para investigar incrementos inesperados** |
+| [GRAFANA_QUERIES.md](GRAFANA_QUERIES.md) | **Queries y dashboards para Grafana** | **Para crear visualizaciones y dashboards** ⭐ |
+| [DEBUG_METRICS.md](DEBUG_METRICS.md) | Debugging de métricas y peticiones | Para investigar incrementos inesperados |
+| [BUG_FIX_METRICS.md](BUG_FIX_METRICS.md) | Bug fix de aio-statsd await | Para entender el bug de await corregido |
 | [CHANGELOG_METRICS.md](CHANGELOG_METRICS.md) | Cambios en la implementación de métricas | Para ver qué se implementó |
 | [AGREGAR_A_TELEGRAF.md](AGREGAR_A_TELEGRAF.md) | Cómo agregar siscom-api a Telegraf existente | Para integrar con tu Telegraf actual |
 
