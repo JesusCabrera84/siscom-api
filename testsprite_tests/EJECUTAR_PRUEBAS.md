@@ -19,7 +19,9 @@ node /home/chch/.npm/_npx/8ddf6bea01b2519d/node_modules/@testsprite/testsprite-m
 ## 📋 Pre-requisitos
 
 ### 1. PostgreSQL corriendo
+
 Opción A - Docker (Recomendado):
+
 ```bash
 docker run -d --name siscom-postgres \
   -e POSTGRES_PASSWORD=postgres \
@@ -29,13 +31,16 @@ docker run -d --name siscom-postgres \
 ```
 
 Opción B - PostgreSQL local:
+
 ```bash
 sudo systemctl start postgresql
 sudo -u postgres psql -c "CREATE DATABASE siscom;"
 ```
 
 ### 2. Archivo .env configurado
+
 Ya existe en `/home/chch/Code/siscom-api/.env` con:
+
 ```env
 DB_HOST=localhost
 DB_PORT=5432
@@ -70,22 +75,26 @@ pip install -r requirements.txt
 ## 🌐 Iniciar el Servidor
 
 ### Modo Desarrollo (con auto-reload)
+
 ```bash
 cd /home/chch/Code/siscom-api
 python3 -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 O con Make:
+
 ```bash
 make dev
 ```
 
 ### Modo Producción
+
 ```bash
 python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
 O con Make:
+
 ```bash
 make run
 ```
@@ -108,20 +117,23 @@ curl http://localhost:8000/api/docs
 ```
 
 Abre en tu navegador:
-- http://localhost:8000/api/docs (Swagger UI)
-- http://localhost:8000/api/redoc (ReDoc)
+
+- <http://localhost:8000/api/docs> (Swagger UI)
+- <http://localhost:8000/api/redoc> (ReDoc)
 
 ---
 
 ## 🧪 Ejecutar Pruebas con TestSprite
 
 ### Todas las Pruebas (10 casos de prueba)
+
 ```bash
 cd /home/chch/Code/siscom-api
 node /home/chch/.npm/_npx/8ddf6bea01b2519d/node_modules/@testsprite/testsprite-mcp/dist/index.js generateCodeAndExecute
 ```
 
 ### Pruebas Específicas
+
 Para ejecutar solo casos de prueba específicos, edita los IDs:
 
 ```bash
@@ -147,11 +159,13 @@ Después de ejecutar TestSprite, los reportes se generan en:
 ```
 
 Ver reporte:
+
 ```bash
 cat /home/chch/Code/siscom-api/testsprite_tests/testsprite-mcp-test-report.md
 ```
 
 O abrirlo en editor:
+
 ```bash
 code /home/chch/Code/siscom-api/testsprite_tests/testsprite-mcp-test-report.md
 ```
@@ -161,6 +175,7 @@ code /home/chch/Code/siscom-api/testsprite_tests/testsprite-mcp-test-report.md
 ## 🐛 Troubleshooting
 
 ### Error: "No module named uvicorn"
+
 ```bash
 pip3 install uvicorn
 # O reinstalar todas las dependencias
@@ -168,6 +183,7 @@ pip3 install -r requirements.txt
 ```
 
 ### Error: "connection to server failed"
+
 PostgreSQL no está corriendo o configuración incorrecta en .env
 
 ```bash
@@ -181,6 +197,7 @@ cat .env | grep DB_
 ```
 
 ### Error: "port 8000 already in use"
+
 ```bash
 # Encontrar y matar el proceso
 sudo lsof -i :8000
@@ -191,6 +208,7 @@ python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8001
 ```
 
 ### Error: "Failed to set up testing tunnel"
+
 El servidor no está corriendo en puerto 8000. Verificar:
 
 ```bash
@@ -204,6 +222,7 @@ Si no responde, reiniciar el servidor.
 ## 🧹 Limpiar y Reiniciar
 
 ### Detener Servidor
+
 ```bash
 # Encontrar proceso
 ps aux | grep uvicorn
@@ -215,12 +234,14 @@ sudo kill -9 <PID>
 ```
 
 ### Limpiar PostgreSQL Docker
+
 ```bash
 docker stop siscom-postgres
 docker rm siscom-postgres
 ```
 
 ### Reiniciar Todo
+
 ```bash
 # 1. Detener todo
 docker stop siscom-postgres
@@ -249,22 +270,26 @@ python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 ## 📝 Pruebas Manuales Rápidas
 
 ### 1. Health Check
+
 ```bash
 curl http://localhost:8000/health
 ```
 
 ### 2. Documentación OpenAPI
+
 ```bash
 curl http://localhost:8000/api/openapi.json | jq
 ```
 
 ### 3. SSE Stream (Ctrl+C para detener)
+
 ```bash
 curl -N -H "Accept: text/event-stream" \
   "http://localhost:8000/api/v1/communications/stream?device_ids=867564050638581"
 ```
 
 ### 4. Endpoint Protegido (Sin JWT - debería fallar con 401)
+
 ```bash
 curl -i "http://localhost:8000/api/v1/communications?device_ids=867564050638581"
 ```
@@ -280,7 +305,7 @@ Antes de ejecutar TestSprite, verifica:
 - [ ] Archivo `.env` configurado correctamente
 - [ ] Servidor FastAPI corriendo (puerto 8000)
 - [ ] Health check responde (`curl http://localhost:8000/health`)
-- [ ] Documentación accesible (http://localhost:8000/api/docs)
+- [ ] Documentación accesible (<http://localhost:8000/api/docs>)
 
 ---
 
@@ -373,6 +398,7 @@ chmod +x /home/chch/Code/siscom-api/run_tests.sh
 ```
 
 Luego ejecutar:
+
 ```bash
 cd /home/chch/Code/siscom-api
 ./run_tests.sh
@@ -381,4 +407,3 @@ cd /home/chch/Code/siscom-api
 ---
 
 **Última actualización**: 7 de octubre de 2025
-

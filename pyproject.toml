@@ -76,3 +76,7 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-v --cov=app --cov-report=term-missing --cov-report=html"
 
+
+[tool.dev-dependencies]
+markdownlint = "npm:markdownlint-cli2"
+prettier = "npm:prettier"

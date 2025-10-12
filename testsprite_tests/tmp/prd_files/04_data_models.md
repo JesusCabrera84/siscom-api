@@ -7,6 +7,7 @@
 Stores GPS communications from Suntech devices.
 
 **Key Fields**:
+
 - `id`: Primary key (integer)
 - `device_id`: Device identifier (string, indexed)
 - `latitude`: GPS latitude (numeric/decimal)
@@ -35,6 +36,7 @@ Stores GPS communications from Queclink devices.
 ## API Response Schema
 
 **CommunicationResponse**:
+
 ```json
 {
   "device_id": "string",
@@ -62,4 +64,3 @@ Stores GPS communications from Queclink devices.
 - Numeric fields can be null if data not available
 - Device IDs are case-sensitive strings
 - API must query both Suntech and Queclink tables and merge results
-

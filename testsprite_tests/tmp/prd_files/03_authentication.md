@@ -7,10 +7,12 @@
 **Token Expiration**: 60 minutes
 
 **Protected Endpoints**:
+
 - `GET /api/v1/communications`
 - `GET /api/v1/devices/{device_id}/communications`
 
 **Public Endpoints** (No auth required):
+
 - `GET /health`
 - `GET /api/v1/communications/stream`
 - `GET /api/v1/devices/{device_id}/communications/stream`
@@ -37,4 +39,3 @@
 - Credentials allowed
 - All HTTP methods allowed
 - All headers allowed
-

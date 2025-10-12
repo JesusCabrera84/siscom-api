@@ -9,16 +9,16 @@ class Settings(BaseSettings):
     # Configuración de Base de Datos
     DB_HOST: str = "localhost"
     DB_PORT: int = 5432
-    DB_USERNAME: str
-    DB_PASSWORD: str
-    DB_DATABASE: str
+    DB_USERNAME: str = ""
+    DB_PASSWORD: str = ""
+    DB_DATABASE: str = ""
     DB_MIN_CONNECTIONS: int = 10
     DB_MAX_CONNECTIONS: int = 20
     DB_CONNECTION_TIMEOUT_SECS: int = 30
     DB_IDLE_TIMEOUT_SECS: int = 300
 
     # Seguridad JWT
-    JWT_SECRET_KEY: str
+    JWT_SECRET_KEY: str = ""
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
 

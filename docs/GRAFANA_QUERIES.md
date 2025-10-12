@@ -128,7 +128,7 @@ today = from(bucket: "siscom")
   |> filter(fn: (r) => r._measurement == "siscom_api.requests")
   |> filter(fn: (r) => r._field == "count")
   |> aggregateWindow(every: 1h, fn: sum)
-  
+
 yesterday = from(bucket: "siscom")
   |> range(start: -48h, stop: -24h)
   |> filter(fn: (r) => r._measurement == "siscom_api.requests")
@@ -172,19 +172,19 @@ Asegúrate de que tu `telegraf.conf` tenga:
 [[inputs.statsd]]
   service_address = ":8126"
   protocol = "udp"
-  
+
   # Configuración para counters y timings
   metric_separator = "."
   datadog_extensions = false
-  
+
   # Percentiles para latencias
   percentiles = [50, 90, 95, 99]
-  
+
   # IMPORTANTE: No borrar gauges
   delete_gauges = false
   delete_counters = false
   delete_timings = true  # Se convierten a estadísticas
-  
+
   [inputs.statsd.tags]
     source = "siscom-api"
 ```
@@ -193,11 +193,11 @@ Asegúrate de que tu `telegraf.conf` tenga:
 
 ## 📊 Tipos de Agregación por Métrica
 
-| Métrica | Tipo StatsD | Campo InfluxDB | Agregación Recomendada |
-|---------|-------------|----------------|------------------------|
-| `siscom_api.requests` | Counter | `count` | `sum()`, `derivative()` para rate |
-| `siscom_api.latency.stream` | Timer | `mean`, `95_percentile`, etc. | `mean()`, `max()` |
-| `siscom_api.sse.active_connections` | Gauge | `value` | `last()`, `mean()`, `max()` |
+| Métrica                             | Tipo StatsD | Campo InfluxDB                | Agregación Recomendada            |
+| ----------------------------------- | ----------- | ----------------------------- | --------------------------------- |
+| `siscom_api.requests`               | Counter     | `count`                       | `sum()`, `derivative()` para rate |
+| `siscom_api.latency.stream`         | Timer       | `mean`, `95_percentile`, etc. | `mean()`, `max()`                 |
+| `siscom_api.sse.active_connections` | Gauge       | `value`                       | `last()`, `mean()`, `max()`       |
 
 ---
 
@@ -205,21 +205,21 @@ Asegúrate de que tu `telegraf.conf` tenga:
 
 ### 1. Latencia Alta
 
-``` plaintext
+```plaintext
 Alert: Latencia > 500ms durante 5 minutos
 Query: mean(siscom_api.latency.stream.mean) > 500
 ```
 
 ### 2. Caída de Tráfico
 
-```
+```plaintext
 Alert: Requests/min < 1 durante 10 minutos (puede indicar problema)
 Query: derivative(siscom_api.requests) < 1
 ```
 
 ### 3. Conexiones SSE Altas
 
-```
+```plaintext
 Alert: Conexiones activas > 100
 Query: last(siscom_api.sse.active_connections) > 100
 ```
@@ -234,7 +234,7 @@ Un contador que **siempre incrementa**. Se resetea cada vez que Telegraf hace fl
 
 **Ejemplo:**
 
-```
+```plaintext
 t=0s:  count=0
 t=10s: count=5   (5 requests en 10s)
 t=20s: count=3   (3 requests en los siguientes 10s)
@@ -278,13 +278,13 @@ Puedes crear variables para filtrar por:
 
 ### Variable: time_range
 
-``` plaintext
+```plaintext
 1m, 5m, 15m, 1h, 6h, 24h, 7d
 ```
 
 ### Variable: percentile
 
-``` plaintext
+```plaintext
 50, 90, 95, 99
 ```
 

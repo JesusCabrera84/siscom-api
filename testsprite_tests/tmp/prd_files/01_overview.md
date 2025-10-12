@@ -22,4 +22,3 @@ Enable efficient querying and real-time monitoring of GPS device communications 
 3. **Secure access**: JWT authentication for protected endpoints
 4. **Scalable**: Async architecture with connection pooling
 5. **Well-documented**: OpenAPI/Swagger documentation included
-

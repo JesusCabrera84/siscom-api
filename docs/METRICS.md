@@ -148,7 +148,7 @@ services:
   telegraf:
     image: telegraf:latest
     ports:
-      - "8125:8125/udp"  # Puerto StatsD
+      - "8125:8125/udp" # Puerto StatsD
     volumes:
       - ./telegraf-statsd.conf:/etc/telegraf/telegraf.conf:ro
     environment:

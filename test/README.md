@@ -21,6 +21,7 @@ test/
 ## 🚀 Ejecutar Tests
 
 ### Todos los Tests
+
 ```bash
 # Opción 1: pytest directo
 pytest
@@ -61,6 +62,7 @@ pytest test/test_health.py::TestHealthEndpoint::test_health_check_returns_200
 ```
 
 ### Modo Verbose
+
 ```bash
 # Muy detallado
 pytest -vv
@@ -75,6 +77,7 @@ pytest --capture=no
 ## 📊 Cobertura de Tests
 
 ### Ver Reporte de Cobertura
+
 ```bash
 # Generar reporte HTML
 pytest --cov=app --cov-report=html
@@ -85,6 +88,7 @@ open htmlcov/index.html       # macOS
 ```
 
 ### Reporte en Terminal
+
 ```bash
 pytest --cov=app --cov-report=term-missing
 ```
@@ -100,6 +104,7 @@ Los tests están organizados con markers para facilitar su ejecución:
 - **`slow`**: Tests que toman más tiempo
 
 ### Usar Markers
+
 ```bash
 pytest -m unit              # Solo unitarios
 pytest -m "unit and auth"   # Unitarios de auth
@@ -109,6 +114,7 @@ pytest -m "not slow"        # Excluir lentos
 ## 🔧 Configuración
 
 ### pytest.ini
+
 La configuración principal está en `/home/chch/Code/siscom-api/pytest.ini`:
 
 - Modo async automático
@@ -117,43 +123,52 @@ La configuración principal está en `/home/chch/Code/siscom-api/pytest.ini`:
 - Opciones de output
 
 ### conftest.py
+
 Fixtures reutilizables:
 
 #### Fixtures de Base de Datos
+
 - `db_session`: Sesión de BD para cada test
 - `setup_test_database`: Crea/destruye tablas de test
 
 #### Fixtures de Autenticación
+
 - `valid_token`: JWT token válido
 - `expired_token`: JWT token expirado
 - `invalid_token`: JWT token inválido
 - `auth_headers`: Headers con Authorization
 
 #### Fixtures de Datos
+
 - `sample_suntech_communication`: Comunicación Suntech de prueba
 - `sample_queclink_communication`: Comunicación Queclink de prueba
 - `multiple_communications`: Múltiples registros
 
 #### Fixtures de Cliente HTTP
+
 - `client`: TestClient síncrono
 - `async_client`: AsyncClient asíncrono
 
 ## 📋 Requisitos
 
 ### Dependencias de Test
+
 ```bash
 pip install pytest pytest-asyncio pytest-cov pytest-mock httpx
 ```
 
 O instalar desde requirements.txt:
+
 ```bash
 pip install -r requirements.txt
 ```
 
 ### Base de Datos de Test
+
 Los tests usan una base de datos separada: `siscom_test`
 
 Crear la BD de test:
+
 ```bash
 # PostgreSQL local
 createdb siscom_test
@@ -172,17 +187,17 @@ import pytest
 @pytest.mark.unit
 class TestMiComponente:
     """Descripción de la suite de tests."""
-    
+
     def test_comportamiento_esperado(self, fixture_necesaria):
         """
         Test: Descripción de qué se está probando.
         """
         # Arrange (preparar)
         data = {"key": "value"}
-        
+
         # Act (ejecutar)
         result = funcion_a_probar(data)
-        
+
         # Assert (verificar)
         assert result == expected_value
 ```
@@ -208,27 +223,29 @@ def test_with_auth(client, auth_headers):
 
 ## 🎯 Cobertura por Módulo
 
-| Módulo | Coverage | Tests |
-|--------|----------|-------|
-| `app/main.py` | 100% | test_health.py |
-| `app/core/security.py` | 100% | test_security.py |
-| `app/api/routes/communications.py` | 95% | test_communications.py |
-| `app/services/repository.py` | 100% | test_repository.py |
-| `app/models/communications.py` | 100% | test_models.py |
-| `app/schemas/communications.py` | 100% | test_schemas.py |
-| `app/core/config.py` | 100% | test_config.py |
+| Módulo                             | Coverage | Tests                  |
+| ---------------------------------- | -------- | ---------------------- |
+| `app/main.py`                      | 100%     | test_health.py         |
+| `app/core/security.py`             | 100%     | test_security.py       |
+| `app/api/routes/communications.py` | 95%      | test_communications.py |
+| `app/services/repository.py`       | 100%     | test_repository.py     |
+| `app/models/communications.py`     | 100%     | test_models.py         |
+| `app/schemas/communications.py`    | 100%     | test_schemas.py        |
+| `app/core/config.py`               | 100%     | test_config.py         |
 
 **Total**: ~95% de cobertura
 
 ## 🐛 Troubleshooting
 
 ### Error: "No such file or directory: siscom_test"
+
 ```bash
 # Crear la base de datos de test
 createdb siscom_test
 ```
 
 ### Error: "connection to server failed"
+
 ```bash
 # Verificar que PostgreSQL está corriendo
 sudo systemctl status postgresql
@@ -237,6 +254,7 @@ docker ps | grep postgres
 ```
 
 ### Error: "ModuleNotFoundError"
+
 ```bash
 # Instalar dependencias
 pip install -r requirements.txt
@@ -246,6 +264,7 @@ export PYTHONPATH="${PYTHONPATH}:/home/chch/Code/siscom-api"
 ```
 
 ### Tests Lentos
+
 ```bash
 # Excluir tests marcados como 'slow'
 pytest -m "not slow"
@@ -264,7 +283,7 @@ Los tests se ejecutan automáticamente en GitHub Actions:
 - name: Run tests
   run: |
     pytest --cov=app --cov-report=xml
-    
+
 - name: Upload coverage
   uses: codecov/codecov-action@v3
 ```
@@ -303,4 +322,3 @@ Antes de hacer commit, verifica:
 **Última actualización**: 7 de octubre de 2025  
 **Tests totales**: 50+  
 **Cobertura**: ~95%
-

@@ -37,7 +37,7 @@ Esta guía cubre el despliegue de SISCOM API v1 (REST) en EC2 usando GitHub Acti
 
 ### Paso 2: Ve a Settings > Secrets and variables > Actions
 
-### Paso 3: Agrega los Secrets:
+### Paso 3: Agrega los Secrets
 
 ```bash
 # Secrets
@@ -51,7 +51,7 @@ EC2_USERNAME=ubuntu
 JWT_SECRET_KEY=tu_jwt_secret_muy_seguro_y_largo
 ```
 
-### Paso 4: Agrega las Variables (pestaña "Variables"):
+### Paso 4: Agrega las Variables (pestaña "Variables")
 
 ```bash
 DB_CONNECTION_TIMEOUT_SECS=30
@@ -68,18 +68,21 @@ DB_USERNAME=postgres
 
 Si necesitas desplegar manualmente:
 
-### 1. Conéctate a tu EC2:
+### 1. Conéctate a tu EC2
+
 ```bash
 ssh -i tu-clave.pem usuario@tu-ec2-host
 ```
 
-### 2. Clona el repositorio:
+### 2. Clona el repositorio
+
 ```bash
 git clone https://github.com/tu-usuario/siscom-api.git
 cd siscom-api
 ```
 
-### 3. Crea el archivo .env:
+### 3. Crea el archivo .env
+
 ```bash
 cat > .env << EOF
 DB_HOST=tu-db-host
@@ -98,18 +101,21 @@ ALLOWED_ORIGINS=*
 EOF
 ```
 
-### 4. Crea la red Docker:
+### 4. Crea la red Docker
+
 ```bash
 docker network create siscom-network
 ```
 
-### 5. Construye y levanta el contenedor:
+### 5. Construye y levanta el contenedor
+
 ```bash
 docker build -t siscom-api:latest .
 docker compose up -d
 ```
 
-### 6. Verifica el estado:
+### 6. Verifica el estado
+
 ```bash
 docker ps
 docker logs siscom-api
@@ -119,10 +125,12 @@ curl http://localhost:8000/health
 ## Despliegue Automático
 
 El despliegue automático se ejecuta cuando:
+
 - Haces push a la rama `main` o `production`
 - Ejecutas manualmente el workflow desde GitHub Actions
 
-### Proceso Automático:
+### Proceso Automático
+
 1. ✅ Build de la imagen Docker
 2. ✅ Compresión y transferencia al EC2
 3. ✅ Carga de la imagen en el servidor
@@ -134,23 +142,27 @@ El despliegue automático se ejecuta cuando:
 
 ## Monitoreo
 
-### Ver logs del contenedor:
+### Ver logs del contenedor
+
 ```bash
 docker logs -f siscom-api
 ```
 
-### Ver estado del contenedor:
+### Ver estado del contenedor
+
 ```bash
 docker ps
 docker inspect siscom-api
 ```
 
-### Health check:
+### Health check
+
 ```bash
 curl http://localhost:8000/health
 ```
 
-### Ver recursos:
+### Ver recursos
+
 ```bash
 docker stats siscom-api
 ```
@@ -175,21 +187,25 @@ docker compose up -d
 
 ## Troubleshooting
 
-### El contenedor no inicia:
+### El contenedor no inicia
+
 ```bash
 docker logs siscom-api
 ```
 
-### Problemas de conexión a la DB:
+### Problemas de conexión a la DB
+
 - Verifica que las variables de entorno estén correctas
 - Verifica que el host de la DB sea accesible desde el EC2
 - Revisa los security groups en AWS
 
-### El health check falla:
+### El health check falla
+
 - Verifica que el puerto 8000 esté expuesto
 - Verifica que la aplicación esté respondiendo
 
-### Problemas de red:
+### Problemas de red
+
 ```bash
 # Verificar que la red exista
 docker network ls | grep siscom-network
@@ -209,4 +225,3 @@ docker network create siscom-network
 - ⚠️ Cambia JWT_SECRET_KEY en producción
 - ⚠️ Configura ALLOWED_ORIGINS apropiadamente en producción
 - ⚠️ Considera usar un registry privado para las imágenes
-

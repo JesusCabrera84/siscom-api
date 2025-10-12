@@ -3,7 +3,7 @@
 **Proyecto**: siscom-api  
 **Fecha**: 7 de octubre de 2025  
 **Tipo de Prueba**: Backend API Testing  
-**Framework**: FastAPI + PostgreSQL  
+**Framework**: FastAPI + PostgreSQL
 
 ---
 
@@ -14,6 +14,7 @@ TestSprite ha analizado el proyecto SISCOM API y generó un plan de pruebas comp
 ### Alcance del Proyecto
 
 SISCOM API es una API RESTful construida con FastAPI para gestionar y monitorear comunicaciones GPS de dispositivos Suntech y Queclink. Soporta:
+
 - ✅ Acceso a datos históricos de comunicaciones GPS
 - ✅ Streaming en tiempo real mediante Server-Sent Events (SSE)
 - ✅ Autenticación JWT para endpoints protegidos
@@ -39,17 +40,20 @@ SISCOM API es una API RESTful construida con FastAPI para gestionar y monitorear
 TestSprite ha identificado **10 casos de prueba críticos**:
 
 ### TC001: Health Check Endpoint ✅
+
 **Objetivo**: Verificar que el endpoint de salud retorna estado del servicio
 
 **Endpoint**: `GET /health`
 
 **Criterios de Aceptación**:
+
 - ✅ Retorna 200 OK cuando el servicio está corriendo
 - ✅ Incluye nombre del servicio y versión
 - ✅ No requiere autenticación
 - ✅ Tiempo de respuesta < 100ms
 
 **Respuesta Esperada**:
+
 ```json
 {
   "status": "healthy",
@@ -63,11 +67,13 @@ TestSprite ha identificado **10 casos de prueba críticos**:
 ---
 
 ### TC002: Comunicaciones Históricas - Múltiples Dispositivos ✅
+
 **Objetivo**: Probar consulta histórica de múltiples dispositivos con JWT
 
 **Endpoint**: `GET /api/v1/communications?device_ids=ID1&device_ids=ID2`
 
 **Criterios de Aceptación**:
+
 - ✅ Requiere JWT token válido en header Authorization
 - ✅ Acepta de 1 a 100 device IDs como query parameters
 - ✅ Retorna datos mezclados de tablas Suntech y Queclink
@@ -75,6 +81,7 @@ TestSprite ha identificado **10 casos de prueba críticos**:
 - ✅ Tiempo de respuesta < 2 segundos para hasta 100 dispositivos
 
 **Pruebas Requeridas**:
+
 1. Request con JWT válido y 1 device ID
 2. Request con JWT válido y múltiples device IDs (10, 50, 100)
 3. Request sin JWT token → 401 Unauthorized
@@ -87,11 +94,13 @@ TestSprite ha identificado **10 casos de prueba críticos**:
 ---
 
 ### TC003: Comunicaciones Históricas - Un Dispositivo ✅
+
 **Objetivo**: Probar consulta histórica de un dispositivo específico
 
 **Endpoint**: `GET /api/v1/devices/{device_id}/communications`
 
 **Criterios de Aceptación**:
+
 - ✅ Requiere JWT token válido
 - ✅ Device ID como path parameter
 - ✅ Retorna datos ordenados por timestamp
@@ -99,6 +108,7 @@ TestSprite ha identificado **10 casos de prueba críticos**:
 - ✅ Retorna array vacío si no hay comunicaciones
 
 **Pruebas Requeridas**:
+
 1. Request con device_id válido y existente
 2. Request con device_id no existente → 404
 3. Request sin JWT → 401
@@ -109,11 +119,13 @@ TestSprite ha identificado **10 casos de prueba críticos**:
 ---
 
 ### TC004: Streaming en Tiempo Real - Múltiples Dispositivos ✅
+
 **Objetivo**: Verificar conexión SSE para múltiples dispositivos
 
 **Endpoint**: `GET /api/v1/communications/stream?device_ids=ID1&device_ids=ID2`
 
 **Criterios de Aceptación**:
+
 - ✅ No requiere autenticación
 - ✅ Acepta de 1 a 50 device IDs
 - ✅ Header `Accept: text/event-stream` requerido
@@ -123,12 +135,14 @@ TestSprite ha identificado **10 casos de prueba críticos**:
 - ✅ Tiempo de establecimiento de conexión < 1 segundo
 
 **Formato de Evento Esperado**:
+
 ```
 event: update
 data: {"device_id": "867564050638581", "latitude": 19.4326, "longitude": -99.1332, "speed": 45.5, "timestamp": "2024-01-15T10:30:00"}
 ```
 
 **Pruebas Requeridas**:
+
 1. Establecer conexión SSE con múltiples device IDs
 2. Verificar que eventos llegan en formato correcto
 3. Verificar que conexión permanece abierta
@@ -140,17 +154,20 @@ data: {"device_id": "867564050638581", "latitude": 19.4326, "longitude": -99.133
 ---
 
 ### TC005: Streaming en Tiempo Real - Un Dispositivo ✅
+
 **Objetivo**: Verificar conexión SSE para un dispositivo específico
 
 **Endpoint**: `GET /api/v1/devices/{device_id}/communications/stream`
 
 **Criterios de Aceptación**:
+
 - ✅ No requiere autenticación
 - ✅ Device ID como path parameter
 - ✅ Header `Accept: text/event-stream` requerido
 - ✅ Eventos solo del dispositivo especificado
 
 **Pruebas Requeridas**:
+
 1. Establecer conexión SSE con device_id válido
 2. Verificar que solo llegan eventos del dispositivo correcto
 3. Probar con device_id inválido
@@ -160,9 +177,11 @@ data: {"device_id": "867564050638581", "latitude": 19.4326, "longitude": -99.133
 ---
 
 ### TC006: Validación y Expiración de JWT ✅
+
 **Objetivo**: Verificar validación correcta de tokens JWT
 
 **Criterios de Aceptación**:
+
 - ✅ Tokens firmados con algoritmo HS256
 - ✅ Tokens expiran después de 60 minutos
 - ✅ Requests con token faltante → 401 Unauthorized
@@ -171,6 +190,7 @@ data: {"device_id": "867564050638581", "latitude": 19.4326, "longitude": -99.133
 - ✅ Secret key almacenado en variables de entorno
 
 **Pruebas Requeridas**:
+
 1. Request con token válido y no expirado → Success
 2. Request sin token → 401
 3. Request con token mal firmado → 401
@@ -183,9 +203,11 @@ data: {"device_id": "867564050638581", "latitude": 19.4326, "longitude": -99.133
 ---
 
 ### TC007: Políticas CORS ✅
+
 **Objetivo**: Verificar configuración CORS
 
 **Criterios de Aceptación**:
+
 - ✅ CORS configurable vía variable de entorno `ALLOWED_ORIGINS`
 - ✅ Default: `*` (permitir todos los orígenes)
 - ✅ Credentials permitidos
@@ -193,6 +215,7 @@ data: {"device_id": "867564050638581", "latitude": 19.4326, "longitude": -99.133
 - ✅ Todos los headers permitidos
 
 **Pruebas Requeridas**:
+
 1. Request desde origen permitido → Success
 2. Verificar headers CORS en response
 3. Probar con diferentes configuraciones de ALLOWED_ORIGINS
@@ -203,20 +226,24 @@ data: {"device_id": "867564050638581", "latitude": 19.4326, "longitude": -99.133
 ---
 
 ### TC008: Documentación API ✅
+
 **Objetivo**: Verificar accesibilidad de documentación API
 
 **Endpoints de Documentación**:
+
 - `/api/openapi.json` - Esquema OpenAPI
 - `/api/docs` - Swagger UI
 - `/api/redoc` - ReDoc
 
 **Criterios de Aceptación**:
+
 - ✅ Esquema OpenAPI accesible y válido
 - ✅ Swagger UI carga correctamente y muestra especificaciones
 - ✅ ReDoc carga correctamente y muestra especificaciones
 - ✅ Todos los endpoints documentados con descripciones y ejemplos
 
 **Pruebas Requeridas**:
+
 1. GET /api/openapi.json → Retorna esquema JSON válido
 2. GET /api/docs → Carga Swagger UI
 3. GET /api/redoc → Carga ReDoc
@@ -227,9 +254,11 @@ data: {"device_id": "867564050638581", "latitude": 19.4326, "longitude": -99.133
 ---
 
 ### TC009: Manejo de Errores ✅
+
 **Objetivo**: Verificar respuestas de error apropiadas
 
 **Criterios de Aceptación**:
+
 - ✅ JWT inválido → 401 Unauthorized con mensaje descriptivo
 - ✅ JWT faltante → 401 Unauthorized
 - ✅ Parámetros faltantes o inválidos → 422 Unprocessable Entity
@@ -238,6 +267,7 @@ data: {"device_id": "867564050638581", "latitude": 19.4326, "longitude": -99.133
 - ✅ Todos los errores incluyen mensajes descriptivos
 
 **Casos de Error a Probar**:
+
 1. Validación de parámetros (device_ids fuera de rango 1-100)
 2. Autenticación fallida (múltiples escenarios)
 3. Recursos no encontrados
@@ -249,15 +279,18 @@ data: {"device_id": "867564050638581", "latitude": 19.4326, "longitude": -99.133
 ---
 
 ### TC010: Pool de Conexiones de Base de Datos ✅
+
 **Objetivo**: Verificar configuración y performance del pool de conexiones
 
 **Configuración**:
+
 - Min connections: 10
 - Max connections: 20
 - Connection timeout: 30 segundos
 - Idle timeout: 300 segundos
 
 **Criterios de Aceptación**:
+
 - ✅ Pool inicializa correctamente al startup
 - ✅ Opera dentro de límites min-max configurados
 - ✅ Maneja cargas concurrentes eficientemente (100+ requests)
@@ -266,6 +299,7 @@ data: {"device_id": "867564050638581", "latitude": 19.4326, "longitude": -99.133
 - ✅ Conexiones retornan al pool después de uso
 
 **Pruebas Requeridas**:
+
 1. Carga concurrente de 50-100 requests simultáneos
 2. Verificar que no excede max connections
 3. Verificar comportamiento con DB desconectada
@@ -279,6 +313,7 @@ data: {"device_id": "867564050638581", "latitude": 19.4326, "longitude": -99.133
 ## 🏗️ Arquitectura Técnica
 
 ### Stack Tecnológico
+
 - **Lenguaje**: Python 3.11+
 - **Framework**: FastAPI
 - **Servidor Web**: Uvicorn (ASGI)
@@ -291,20 +326,21 @@ data: {"device_id": "867564050638581", "latitude": 19.4326, "longitude": -99.133
 
 ### Endpoints Principales
 
-| Endpoint | Método | Auth | Descripción |
-|----------|--------|------|-------------|
-| `/health` | GET | ❌ No | Health check del servicio |
-| `/api/v1/communications` | GET | ✅ JWT | Histórico múltiples dispositivos |
-| `/api/v1/devices/{device_id}/communications` | GET | ✅ JWT | Histórico un dispositivo |
-| `/api/v1/communications/stream` | GET | ❌ No | SSE múltiples dispositivos |
-| `/api/v1/devices/{device_id}/communications/stream` | GET | ❌ No | SSE un dispositivo |
-| `/api/docs` | GET | ❌ No | Documentación Swagger UI |
-| `/api/redoc` | GET | ❌ No | Documentación ReDoc |
-| `/api/openapi.json` | GET | ❌ No | Esquema OpenAPI |
+| Endpoint                                            | Método | Auth   | Descripción                      |
+| --------------------------------------------------- | ------ | ------ | -------------------------------- |
+| `/health`                                           | GET    | ❌ No  | Health check del servicio        |
+| `/api/v1/communications`                            | GET    | ✅ JWT | Histórico múltiples dispositivos |
+| `/api/v1/devices/{device_id}/communications`        | GET    | ✅ JWT | Histórico un dispositivo         |
+| `/api/v1/communications/stream`                     | GET    | ❌ No  | SSE múltiples dispositivos       |
+| `/api/v1/devices/{device_id}/communications/stream` | GET    | ❌ No  | SSE un dispositivo               |
+| `/api/docs`                                         | GET    | ❌ No  | Documentación Swagger UI         |
+| `/api/redoc`                                        | GET    | ❌ No  | Documentación ReDoc              |
+| `/api/openapi.json`                                 | GET    | ❌ No  | Esquema OpenAPI                  |
 
 ### Modelos de Datos
 
 **communications_suntech** (Dispositivos Suntech):
+
 - `device_id`, `latitude`, `longitude`, `speed`, `course`
 - `gps_datetime`, `gps_epoch`
 - `main_battery_voltage`, `backup_battery_voltage`
@@ -313,6 +349,7 @@ data: {"device_id": "867564050638581", "latitude": 19.4326, "longitude": -99.133
 - `received_at`, `created_at`
 
 **communications_queclink** (Dispositivos Queclink):
+
 - Misma estructura que communications_suntech
 
 ---
@@ -320,15 +357,18 @@ data: {"device_id": "867564050638581", "latitude": 19.4326, "longitude": -99.133
 ## 🔒 Seguridad
 
 ### Autenticación JWT
+
 - **Algoritmo**: HS256
 - **Expiración**: 60 minutos
 - **Secret Key**: Variable de entorno `JWT_SECRET_KEY`
 
 ### Endpoints Protegidos (Requieren JWT)
+
 - `GET /api/v1/communications`
 - `GET /api/v1/devices/{device_id}/communications`
 
 ### Endpoints Públicos (No requieren JWT)
+
 - `GET /health`
 - `GET /api/v1/communications/stream`
 - `GET /api/v1/devices/{device_id}/communications/stream`
@@ -337,6 +377,7 @@ data: {"device_id": "867564050638581", "latitude": 19.4326, "longitude": -99.133
 - `GET /api/openapi.json`
 
 ### CORS
+
 - Configurable vía `ALLOWED_ORIGINS`
 - Default: `*` (todos los orígenes)
 - Producción: debe restringirse a dominios específicos
@@ -345,13 +386,13 @@ data: {"device_id": "867564050638581", "latitude": 19.4326, "longitude": -99.133
 
 ## 📈 Requisitos de Performance
 
-| Métrica | Target |
-|---------|--------|
-| Health check response time | < 100ms |
-| Historical queries (hasta 100 devices) | < 2 segundos |
-| SSE connection establishment | < 1 segundo |
-| Concurrent requests supported | 100+ |
-| Database connection pool | 10-20 conexiones |
+| Métrica                                | Target           |
+| -------------------------------------- | ---------------- |
+| Health check response time             | < 100ms          |
+| Historical queries (hasta 100 devices) | < 2 segundos     |
+| SSE connection establishment           | < 1 segundo      |
+| Concurrent requests supported          | 100+             |
+| Database connection pool               | 10-20 conexiones |
 
 ---
 
@@ -360,13 +401,16 @@ data: {"device_id": "867564050638581", "latitude": 19.4326, "longitude": -99.133
 Para ejecutar las pruebas automatizadas con TestSprite, sigue estos pasos:
 
 ### 1. Instalar Dependencias
+
 ```bash
 cd /home/chch/Code/siscom-api
 pip3 install -r requirements.txt
 ```
 
 ### 2. Configurar Variables de Entorno
+
 Asegúrate de que el archivo `.env` existe con:
+
 ```env
 DB_HOST=localhost
 DB_PORT=5432
@@ -378,6 +422,7 @@ ALLOWED_ORIGINS=*
 ```
 
 ### 3. Iniciar Base de Datos PostgreSQL
+
 ```bash
 docker run -d --name siscom-postgres \
   -e POSTGRES_PASSWORD=postgres \
@@ -387,12 +432,15 @@ docker run -d --name siscom-postgres \
 ```
 
 ### 4. Iniciar el Servidor
+
 ```bash
 python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
 ### 5. Ejecutar TestSprite
+
 En otra terminal:
+
 ```bash
 cd /home/chch/Code/siscom-api
 node /home/chch/.npm/_npx/8ddf6bea01b2519d/node_modules/@testsprite/testsprite-mcp/dist/index.js generateCodeAndExecute
@@ -405,21 +453,25 @@ node /home/chch/.npm/_npx/8ddf6bea01b2519d/node_modules/@testsprite/testsprite-m
 Mientras tanto, puedes validar manualmente:
 
 ### Health Check
+
 ```bash
 curl http://localhost:8000/health
 ```
 
 ### Documentación
-- Abre http://localhost:8000/api/docs en tu navegador
-- Abre http://localhost:8000/api/redoc en tu navegador
+
+- Abre <http://localhost:8000/api/docs> en tu navegador
+- Abre <http://localhost:8000/api/redoc> en tu navegador
 
 ### Endpoint Protegido (requiere JWT)
+
 ```bash
 curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   "http://localhost:8000/api/v1/communications?device_ids=867564050638581"
 ```
 
 ### SSE Streaming
+
 ```bash
 curl -H "Accept: text/event-stream" \
   "http://localhost:8000/api/v1/communications/stream?device_ids=867564050638581"
@@ -456,6 +508,7 @@ TestSprite ha generado pruebas para:
 ## 📝 Notas Adicionales
 
 ### Limitaciones Identificadas
+
 - ⚠️ Los endpoints SSE actualmente devuelven datos simulados (ver TODO en el código)
 - ⚠️ Faltan pruebas unitarias (directorio `test/` vacío)
 - ⚠️ Logging estructurado no completamente implementado
@@ -463,6 +516,7 @@ TestSprite ha generado pruebas para:
 - ⚠️ No hay caché (Redis) para consultas frecuentes
 
 ### Recomendaciones de Mejora
+
 1. Implementar integración real con sistema de mensajería (Kafka/Redis) para SSE
 2. Agregar pruebas unitarias con pytest
 3. Implementar rate limiting para protección contra abuso
@@ -476,4 +530,3 @@ TestSprite ha generado pruebas para:
 **Generado por**: TestSprite MCP  
 **Fecha**: 7 de octubre de 2025  
 **Versión del Reporte**: 1.0
-

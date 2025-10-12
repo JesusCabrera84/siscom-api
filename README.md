@@ -189,14 +189,14 @@ Agrega a `.vscode/settings.json`:
 
 ```json
 {
-    "[python]": {
-        "editor.formatOnSave": true,
-        "editor.defaultFormatter": "ms-python.black-formatter",
-        "editor.codeActionsOnSave": {
-            "source.organizeImports": true
-        }
-    },
-    "ruff.enable": true
+  "[python]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": true
+    }
+  },
+  "ruff.enable": true
 }
 ```
 
@@ -244,17 +244,18 @@ docker network create siscom-network
 docker compose up -d
 ```
 
-## 📚 Documentación de la API
+## 📚 Documentación
 
-📁 **[docs/](docs/)** - Toda la documentación está organizada en la carpeta `docs/`
+### 📖 Documentación Principal
 
-### 🚀 Guías y Documentación
-
-- **[📘 API REST Guide](docs/API_REST_GUIDE.md)** - Documentación completa de todos los endpoints REST v1
-- **[🔄 Migration Guide](docs/MIGRATION_REST.md)** - Guía rápida de migración a REST v1
-- **[📮 Postman Examples](docs/POSTMAN_EXAMPLES.md)** - Ejemplos con cURL, Postman y JavaScript
-- **[📖 Swagger UI](http://localhost:8000/api/docs)** - Documentación interactiva (cuando el servidor esté corriendo)
-- **[📑 Índice Completo](docs/DOCS_INDEX.md)** - Navegación organizada por temas y casos de uso
+| Documento                                           | Descripción                                            |
+| --------------------------------------------------- | ------------------------------------------------------ |
+| **[📘 API REST Guide](docs/API_REST_GUIDE.md)**     | Documentación completa de todos los endpoints          |
+| **[📮 Ejemplos de Uso](docs/POSTMAN_EXAMPLES.md)**  | Ejemplos con cURL, Postman, JavaScript, Python, Svelte |
+| **[📊 Métricas](docs/METRICS.md)**                  | Sistema de métricas StatsD/Telegraf/InfluxDB           |
+| **[📈 Queries Grafana](docs/GRAFANA_QUERIES.md)**   | Dashboards y queries para visualizar métricas          |
+| **[🚀 Deployment](docs/DEPLOYMENT.md)**             | Guía de despliegue en EC2 con GitHub Actions           |
+| **[📖 Swagger UI](http://localhost:8000/api/docs)** | Documentación interactiva (servidor corriendo)         |
 
 ### Endpoints REST v1
 
@@ -294,12 +295,12 @@ Accept: text/event-stream
 
 ### Tabla de Endpoints
 
-| Endpoint | Método | Auth | Descripción |
-|----------|--------|------|-------------|
-| `GET /api/v1/communications` | GET | ✅ JWT | Histórico de múltiples dispositivos |
-| `GET /api/v1/communications/stream` | GET | ❌ No | Stream SSE de múltiples dispositivos |
-| `GET /api/v1/devices/{device_id}/communications` | GET | ✅ JWT | Histórico de un solo dispositivo |
-| `GET /api/v1/devices/{device_id}/communications/stream` | GET | ❌ No | Stream SSE de un solo dispositivo |
+| Endpoint                                                | Método | Auth   | Descripción                          |
+| ------------------------------------------------------- | ------ | ------ | ------------------------------------ |
+| `GET /api/v1/communications`                            | GET    | ✅ JWT | Histórico de múltiples dispositivos  |
+| `GET /api/v1/communications/stream`                     | GET    | ❌ No  | Stream SSE de múltiples dispositivos |
+| `GET /api/v1/devices/{device_id}/communications`        | GET    | ✅ JWT | Histórico de un solo dispositivo     |
+| `GET /api/v1/devices/{device_id}/communications/stream` | GET    | ❌ No  | Stream SSE de un solo dispositivo    |
 
 ## 🏗️ Arquitectura
 
@@ -314,31 +315,26 @@ siscom-api/
 │   │   ├── middleware.py    # Middleware de métricas
 │   │   └── security.py      # JWT y autenticación
 │   ├── models/              # Modelos SQLAlchemy
+│   ├── schemas/             # Schemas Pydantic
 │   ├── services/            # Lógica de negocio
 │   ├── utils/
 │   │   ├── exceptions.py    # Excepciones personalizadas
 │   │   ├── logger.py        # Logging
 │   │   └── metrics.py       # Cliente aio-statsd
 │   └── main.py              # Aplicación principal
-├── docs/                    # 📚 Toda la documentación
-│   ├── README.md            # Índice de documentación
-│   ├── DOCS_INDEX.md        # Navegación detallada
-│   ├── API_REST_GUIDE.md    # Guía completa de API
-│   ├── MIGRATION_REST.md    # Guía de migración
-│   ├── POSTMAN_EXAMPLES.md  # Ejemplos de código
-│   ├── DEPLOYMENT.md        # Guía de despliegue
-│   ├── GITHUB_VARIABLES.md  # Config de variables
-│   ├── METRICS.md           # Doc de métricas
-│   ├── QUICKSTART_METRICS.md # Guía rápida métricas
-│   └── ...                  # Más documentación
+├── docs/                    # 📚 Documentación
+│   ├── API_REST_GUIDE.md    # 📘 Guía completa del API
+│   ├── POSTMAN_EXAMPLES.md  # 📮 Ejemplos de uso
+│   ├── METRICS.md           # 📊 Sistema de métricas
+│   ├── GRAFANA_QUERIES.md   # 📈 Queries y dashboards
+│   └── DEPLOYMENT.md        # 🚀 Guía de deployment
 ├── test/                    # Tests unitarios e integración
+├── scripts/                 # Scripts de utilidad
 ├── .github/
 │   └── workflows/
 │       └── deploy.yml       # CI/CD pipeline
 ├── Dockerfile
 ├── docker-compose.yml
-├── telegraf-statsd.conf     # Configuración Telegraf
-├── test_metrics.py          # Script de prueba de métricas
 ├── requirements.txt
 └── README.md
 ```
@@ -353,10 +349,11 @@ siscom-api/
 
 ## 🚢 Despliegue
 
-Ver documentación completa de despliegue:
+Ver documentación completa de despliegue en [DEPLOYMENT.md](docs/DEPLOYMENT.md):
 
-- [DEPLOYMENT.md](docs/DEPLOYMENT.md) - Instrucciones detalladas de despliegue en EC2 con GitHub Actions
-- [GITHUB_VARIABLES.md](docs/GITHUB_VARIABLES.md) - Configuración de variables de entorno en GitHub (incluye STATSD_*)
+- Instrucciones detalladas de despliegue en EC2 con GitHub Actions
+- Configuración de variables de entorno en GitHub (incluye STATSD\_\*)
+- Health checks y verificación de deployment
 
 ## 📊 Modelos de Datos
 
@@ -507,7 +504,7 @@ STATSD_PREFIX=siscom_api
 - ✅ **Tags nativos:** Formato InfluxDB optimizado
 - ✅ **Robusto:** Maneja errores de red sin impactar la aplicación
 
-Ver documentación completa en [METRICS.md](docs/METRICS.md) y guía rápida en [QUICKSTART_METRICS.md](docs/QUICKSTART_METRICS.md)
+Ver documentación completa en [METRICS.md](docs/METRICS.md)
 
 ## 📝 Mejoras Sugeridas
 

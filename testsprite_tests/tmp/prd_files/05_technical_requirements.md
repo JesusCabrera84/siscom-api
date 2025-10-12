@@ -14,12 +14,14 @@
 ## Database Connection
 
 **Connection Pool Configuration**:
+
 - Minimum connections: 10
 - Maximum connections: 20
 - Connection timeout: 30 seconds
 - Idle timeout: 300 seconds
 
 **Requirements**:
+
 - Must use async PostgreSQL driver (asyncpg)
 - Connection pool should be initialized on startup
 - Connections should be returned to pool after use
@@ -38,13 +40,15 @@
 **Port**: 8000
 
 **Docker Requirements**:
+
 - Multi-stage build for optimized image size
 - Non-root user for security
 - Health check configured in Dockerfile
 - Environment variables for configuration
 
 **Environment Variables**:
-```
+
+``` bash
 DB_HOST
 DB_PORT
 DB_USERNAME
@@ -82,4 +86,3 @@ ALLOWED_ORIGINS
 - Errors should be logged with stack traces
 - Database connection events should be logged
 - Log level configurable via environment
-
