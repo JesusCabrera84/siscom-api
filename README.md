@@ -24,6 +24,7 @@ API FastAPI para gestión de comunicaciones de dispositivos GPS (Suntech y Quecl
 ## 🛠️ Instalación Local
 
 ### Opción A: Con script de setup (recomendado)
+
 ```bash
 git clone https://github.com/tu-usuario/siscom-api.git
 cd siscom-api
@@ -32,19 +33,22 @@ cd siscom-api
 
 ### Opción B: Manual
 
-#### 1. Clonar el repositorio:
+#### 1. Clonar el repositorio
+
 ```bash
 git clone https://github.com/tu-usuario/siscom-api.git
 cd siscom-api
 ```
 
-#### 2. Crear entorno virtual:
+#### 2. Crear entorno virtual
+
 ```bash
 python -m venv venv
 source venv/bin/activate  # En Windows: venv\Scripts\activate
 ```
 
-#### 3. Instalar dependencias:
+#### 3. Instalar dependencias
+
 ```bash
 # Dependencias básicas
 pip install -r requirements.txt
@@ -53,7 +57,8 @@ pip install -r requirements.txt
 make install
 ```
 
-#### 4. Configurar variables de entorno:
+#### 4. Configurar variables de entorno
+
 Crea un archivo `.env` en la raíz del proyecto:
 
 ```env
@@ -79,15 +84,17 @@ STATSD_PORT=8126
 STATSD_PREFIX=siscom_api
 ```
 
-### 5. Ejecutar la aplicación:
+### 5. Ejecutar la aplicación
+
 ```bash
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 La API estará disponible en:
-- API: http://localhost:8000
-- Documentación: http://localhost:8000/api/docs
-- ReDoc: http://localhost:8000/api/redoc
+
+- API: <http://localhost:8000>
+- Documentación: <http://localhost:8000/api/docs>
+- ReDoc: <http://localhost:8000/api/redoc>
 
 ## 🔧 Desarrollo y Calidad de Código
 
@@ -95,12 +102,14 @@ La API estará disponible en:
 
 Este proyecto usa herramientas modernas de linting y formateo para mantener la calidad del código:
 
-#### Instalación de herramientas:
+#### Instalación de herramientas
+
 ```bash
 pip install ruff black mypy
 ```
 
 #### 🔍 Ruff - Linter ultrarrápido
+
 Ruff es un linter de Python extremadamente rápido que reemplaza a flake8, isort, y más.
 
 ```bash
@@ -115,6 +124,7 @@ ruff check app/main.py
 ```
 
 #### 🎨 Black - Formateador de código
+
 Black formatea automáticamente tu código siguiendo PEP 8.
 
 ```bash
@@ -129,6 +139,7 @@ black app/main.py
 ```
 
 #### 📝 MyPy - Verificador de tipos estáticos
+
 MyPy verifica los tipos de datos en tu código Python.
 
 ```bash
@@ -139,7 +150,8 @@ mypy app/ --ignore-missing-imports
 mypy app/ --strict
 ```
 
-#### 🚀 Ejecutar todos los linters de una vez:
+#### 🚀 Ejecutar todos los linters de una vez
+
 ```bash
 # Opción 1: Manualmente
 ruff check app/ && black --check app/ && mypy app/ --ignore-missing-imports
@@ -149,7 +161,8 @@ make check-all      # Verificar todo
 make fix-all        # Auto-corregir y formatear
 ```
 
-#### 📦 Comandos útiles con Makefile:
+#### 📦 Comandos útiles con Makefile
+
 ```bash
 make help           # Ver todos los comandos disponibles
 make install        # Instalar dependencias
@@ -167,11 +180,13 @@ make docker-up      # Levantar con Docker Compose
 #### 💡 Configuración en tu editor
 
 **VSCode** - Instala estas extensiones:
+
 - Ruff (charliermarsh.ruff)
 - Black Formatter (ms-python.black-formatter)
 - Pylance para MyPy (ms-python.vscode-pylance)
 
 Agrega a `.vscode/settings.json`:
+
 ```json
 {
     "[python]": {
@@ -211,16 +226,19 @@ pre-commit install
 ```
 
 ### CI/CD
+
 Los linters se ejecutan automáticamente en cada push a través de GitHub Actions. Si el código no pasa los linters, el deploy se detiene automáticamente.
 
 ## 🐳 Docker
 
-### Construir imagen:
+### Construir imagen
+
 ```bash
 docker build -t siscom-api:latest .
 ```
 
-### Ejecutar con Docker Compose:
+### Ejecutar con Docker Compose
+
 ```bash
 docker network create siscom-network
 docker compose up -d
@@ -241,29 +259,34 @@ docker compose up -d
 ### Endpoints REST v1
 
 #### Health Check
+
 ```http
 GET /health
 ```
 
 #### Comunicaciones - Múltiples Dispositivos
+
 ```http
 GET /api/v1/communications?device_ids=867564050638581&device_ids=DEVICE123
 Authorization: Bearer {token}
 ```
 
 #### Comunicaciones - Un Solo Dispositivo
+
 ```http
 GET /api/v1/devices/{device_id}/communications
 Authorization: Bearer {token}
 ```
 
 #### Stream SSE - Múltiples Dispositivos
+
 ```http
 GET /api/v1/communications/stream?device_ids=867564050638581&device_ids=DEVICE123
 Accept: text/event-stream
 ```
 
 #### Stream SSE - Un Solo Dispositivo
+
 ```http
 GET /api/v1/devices/{device_id}/communications/stream
 Accept: text/event-stream
@@ -280,7 +303,7 @@ Accept: text/event-stream
 
 ## 🏗️ Arquitectura
 
-```
+```plaintext
 siscom-api/
 ├── app/
 │   ├── api/
@@ -331,6 +354,7 @@ siscom-api/
 ## 🚢 Despliegue
 
 Ver documentación completa de despliegue:
+
 - [DEPLOYMENT.md](docs/DEPLOYMENT.md) - Instrucciones detalladas de despliegue en EC2 con GitHub Actions
 - [GITHUB_VARIABLES.md](docs/GITHUB_VARIABLES.md) - Configuración de variables de entorno en GitHub (incluye STATSD_*)
 
@@ -443,6 +467,7 @@ La API envía métricas automáticamente a Telegraf usando el protocolo StatsD c
 ### Configuración
 
 Agrega estas variables a tu `.env`:
+
 ```env
 STATSD_HOST=localhost
 STATSD_PORT=8126
@@ -452,6 +477,7 @@ STATSD_PREFIX=siscom_api
 ### Uso con Telegraf
 
 1. Copia el archivo de configuración de ejemplo:
+
    ```bash
    cp telegraf-statsd.conf /path/to/telegraf/telegraf.conf
    ```
@@ -459,6 +485,7 @@ STATSD_PREFIX=siscom_api
 2. Configura las variables de InfluxDB en Telegraf
 
 3. Inicia Telegraf:
+
    ```bash
    docker run -d --name telegraf \
      -p 8125:8125/udp \
@@ -467,6 +494,7 @@ STATSD_PREFIX=siscom_api
    ```
 
 4. Prueba las métricas:
+
    ```bash
    python test_metrics.py
    ```
@@ -483,7 +511,8 @@ Ver documentación completa en [METRICS.md](docs/METRICS.md) y guía rápida en 
 
 ## 📝 Mejoras Sugeridas
 
-### Implementadas:
+### Implementadas
+
 - ✅ Pool de conexiones optimizado
 - ✅ Health check endpoint
 - ✅ CORS configurado
@@ -493,7 +522,8 @@ Ver documentación completa en [METRICS.md](docs/METRICS.md) y guía rápida en 
 - ✅ **Suite completa de tests con pytest (50+ tests, ~95% coverage)**
 - ✅ **Métricas StatsD con aio-statsd para Telegraf/InfluxDB**
 
-### Por Implementar:
+### Por Implementar
+
 - ⚠️ Logging estructurado con Loguru (archivos utils vacíos)
 - ⚠️ Manejo de excepciones personalizado
 - ⚠️ Rate limiting
@@ -522,4 +552,3 @@ Ver documentación completa en [METRICS.md](docs/METRICS.md) y guía rápida en 
 ## 📞 Contacto
 
 [Tu contacto aquí]
-

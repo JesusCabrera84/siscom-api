@@ -35,6 +35,7 @@
 | [QUICKSTART_METRICS.md](QUICKSTART_METRICS.md) | Guía rápida de configuración de métricas | Para configurar métricas en 5 minutos |
 | [METRICS.md](METRICS.md) | Documentación completa de métricas StatsD | Para entender el sistema de métricas |
 | [GRAFANA_QUERIES.md](GRAFANA_QUERIES.md) | **Queries y dashboards para Grafana** | **Para crear visualizaciones y dashboards** ⭐ |
+| [LOGS_TO_INFLUX.md](LOGS_TO_INFLUX.md) | **Enviar logs a InfluxDB con Telegraf** | **Para centralizar logs en InfluxDB** ⭐ |
 | [DEBUG_METRICS.md](DEBUG_METRICS.md) | Debugging de métricas y peticiones | Para investigar incrementos inesperados |
 | [BUG_FIX_METRICS.md](BUG_FIX_METRICS.md) | Bug fix de aio-statsd await | Para entender el bug de await corregido |
 | [CHANGELOG_METRICS.md](CHANGELOG_METRICS.md) | Cambios en la implementación de métricas | Para ver qué se implementó |
@@ -73,33 +74,39 @@
 ## 🎯 Guías por Caso de Uso
 
 ### "Quiero probar la API rápidamente"
+
 1. Lee [MIGRATION_REST.md](MIGRATION_REST.md) (5 minutos)
 2. Importa `SISCOM-API-v1.postman_collection.json` en Postman
 3. Configura tu token JWT
 4. Empieza a probar
 
 ### "Necesito integrar en mi frontend (Svelte)"
+
 1. Lee [POSTMAN_EXAMPLES.md](POSTMAN_EXAMPLES.md)
 2. Ve a la sección "En Svelte"
 3. Copia los componentes de ejemplo
 4. Adapta a tu necesidad
 
 ### "Quiero entender todos los endpoints"
+
 1. Lee [API_REST_GUIDE.md](API_REST_GUIDE.md) completo
 2. Abre [Swagger UI](http://localhost:8000/api/docs)
 3. Prueba cada endpoint con "Try it out"
 
 ### "Vengo de la versión anterior (POST)"
+
 1. Lee [MIGRATION_REST.md](MIGRATION_REST.md)
 2. Ve a la sección "Comparación Rápida"
 3. Actualiza tu código según los ejemplos
 
 ### "Quiero desplegar en producción"
+
 1. Lee [DEPLOYMENT.md](DEPLOYMENT.md)
 2. Configura secrets en GitHub
 3. Haz push a master para auto-deploy
 
 ### "Quiero contribuir o mejorar"
+
 1. Lee [MEJORAS_RECOMENDADAS.md](MEJORAS_RECOMENDADAS.md)
 2. Revisa items pendientes
 3. Lee [CHANGELOG.md](CHANGELOG.md) para contexto
@@ -148,7 +155,7 @@
 
 ### Código Fuente Principal
 
-```
+```plaintext
 app/
 ├── api/
 │   └── routes/
@@ -171,8 +178,11 @@ app/
 ## 🆘 ¿Necesitas Ayuda?
 
 ### 1. Revisa la documentación relevante arriba
+
 ### 2. Abre [Swagger UI](http://localhost:8000/api/docs) para ver ejemplos interactivos
+
 ### 3. Revisa [POSTMAN_EXAMPLES.md](POSTMAN_EXAMPLES.md) para ejemplos de código
+
 ### 4. Consulta [MEJORAS_RECOMENDADAS.md](MEJORAS_RECOMENDADAS.md) para features conocidas
 
 ---
@@ -180,12 +190,14 @@ app/
 ## 🎓 Orden Recomendado de Lectura
 
 ### Para Desarrolladores Nuevos
+
 1. [README.md](../README.md) - Instalación y setup
 2. [MIGRATION_REST.md](MIGRATION_REST.md) - Entender endpoints REST v1
 3. [POSTMAN_EXAMPLES.md](POSTMAN_EXAMPLES.md) - Ejemplos prácticos
 4. [API_REST_GUIDE.md](API_REST_GUIDE.md) - Documentación completa
 
 ### Para DevOps
+
 1. [README.md](../README.md) - Arquitectura general
 2. [DEPLOYMENT.md](DEPLOYMENT.md) - Proceso de deployment
 3. [GITHUB_VARIABLES.md](GITHUB_VARIABLES.md) - Configuración de variables
@@ -193,6 +205,7 @@ app/
 5. [MEJORAS_RECOMENDADAS.md](MEJORAS_RECOMENDADAS.md) - Mejoras de infraestructura
 
 ### Para Frontend Developers
+
 1. [MIGRATION_REST.md](MIGRATION_REST.md) - Entender endpoints
 2. [POSTMAN_EXAMPLES.md](POSTMAN_EXAMPLES.md) - Ejemplos de integración
 3. [API_REST_GUIDE.md](API_REST_GUIDE.md) - Referencia completa

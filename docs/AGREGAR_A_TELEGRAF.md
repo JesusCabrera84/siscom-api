@@ -180,7 +180,7 @@ influx query 'from(bucket:"siscom")
 
 En GitHub, asegúrate de configurar las variables con el **puerto 8126**:
 
-```
+``` plaintext
 STATSD_HOST = localhost    (o la IP de tu servidor Telegraf)
 STATSD_PORT = 8126         ← IMPORTANTE: 8126, no 8125
 STATSD_PREFIX = siscom_api
@@ -205,11 +205,13 @@ También puedes usar el archivo [`telegraf-siscom-addon.conf`](../telegraf-sisco
 ### No veo el puerto 8126
 
 **Verificar:**
+
 ```bash
 netstat -ulnp | grep 8126
 ```
 
 **Si no aparece:**
+
 1. Verifica que agregaste el bloque correctamente
 2. Reinicia Telegraf: `docker restart telegraf`
 3. Revisa logs: `docker logs telegraf`
@@ -217,12 +219,14 @@ netstat -ulnp | grep 8126
 ### Las métricas no llegan
 
 **Verificar conectividad:**
+
 ```bash
 # Desde el servidor de la API
 nc -u -v -z $STATSD_HOST 8126
 ```
 
 **Verificar configuración de siscom-api:**
+
 ```bash
 # SSH a tu EC2
 cat ~/siscom-api/.env | grep STATSD
@@ -231,11 +235,13 @@ cat ~/siscom-api/.env | grep STATSD
 ### Las métricas llegan pero sin tags
 
 **Verificar en el bloque que agregaste:**
+
 ```toml
 datadog_extensions = false  # ← Debe ser false
 ```
 
 **Verificar formato de envío:**
+
 ```bash
 # aio-statsd envía:
 metric,tag1=value1:value|type
@@ -253,4 +259,3 @@ metric:value|type|#tag1:value1
 ---
 
 **Última actualización:** Octubre 2024
-

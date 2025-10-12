@@ -35,6 +35,7 @@ Todas las métricas incluyen el tag `app=siscom-api` para identificar la aplicac
 **Tag:** `app=siscom-api`
 
 **Cómo calcular peticiones por minuto en InfluxDB:**
+
 ```flux
 from(bucket: "your-bucket")
   |> range(start: -1h)
@@ -51,6 +52,7 @@ from(bucket: "your-bucket")
 **Tag:** `app=siscom-api`
 
 Esta métrica genera automáticamente las siguientes sub-métricas en Telegraf:
+
 - `siscom_api.latency.stream.mean` - Latencia media
 - `siscom_api.latency.stream.median` - Percentil 50
 - `siscom_api.latency.stream.p90` - Percentil 90
@@ -58,6 +60,7 @@ Esta métrica genera automáticamente las siguientes sub-métricas en Telegraf:
 - `siscom_api.latency.stream.p99` - Percentil 99
 
 **Consulta en InfluxDB (latencia media):**
+
 ```flux
 from(bucket: "your-bucket")
   |> range(start: -1h)
@@ -76,11 +79,13 @@ from(bucket: "your-bucket")
 Esta métrica se incrementa cuando un cliente se conecta a cualquier endpoint SSE y se decrementa cuando se desconecta.
 
 **Endpoints SSE monitoreados:**
+
 - `/stream?device_ids=...`
 - `/api/v1/communications/stream?device_ids=...`
 - `/api/v1/devices/{device_id}/communications/stream`
 
 **Consulta en InfluxDB:**
+
 ```flux
 from(bucket: "your-bucket")
   |> range(start: -1h)
@@ -91,6 +96,7 @@ from(bucket: "your-bucket")
 ## Arquitectura
 
 La implementación usa **aio-statsd**, una librería asíncrona que:
+
 - ✅ Es completamente asíncrona (compatible con FastAPI y asyncio)
 - ✅ No bloquea el event loop
 - ✅ Usa UDP para no afectar el rendimiento
@@ -136,6 +142,7 @@ STATSD_PORT=8125
 Si Telegraf está en un container Docker, asegúrate de que puede recibir tráfico UDP en el puerto 8125:
 
 **docker-compose.yml de Telegraf:**
+
 ```yaml
 services:
   telegraf:
@@ -151,6 +158,7 @@ services:
 ```
 
 Luego configura la API para apuntar al host correcto:
+
 ```bash
 # Si estás usando docker-compose para ambos servicios
 STATSD_HOST=telegraf
@@ -162,6 +170,7 @@ STATSD_HOST=172.17.0.1  # IP del gateway de Docker
 ### Opción 3: Network host mode
 
 Si usas `network_mode: host` en tu container, usa:
+
 ```bash
 STATSD_HOST=localhost
 STATSD_PORT=8125
@@ -176,6 +185,7 @@ Inicia la API y haz algunas peticiones. Las métricas se envían automáticament
 ### 2. Verificar que Telegraf está recibiendo métricas
 
 Revisa los logs de Telegraf:
+
 ```bash
 docker logs telegraf
 ```
@@ -183,6 +193,7 @@ docker logs telegraf
 ### 3. Consultar métricas en InfluxDB
 
 Usa el Data Explorer de InfluxDB o la CLI:
+
 ```bash
 influx query 'from(bucket:"your-bucket") |> range(start: -1h) |> filter(fn: (r) => r._measurement =~ /siscom_api/)'
 ```
@@ -194,6 +205,7 @@ influx query 'from(bucket:"your-bucket") |> range(start: -1h) |> filter(fn: (r) 
 Puedes crear un dashboard en Grafana con los siguientes paneles:
 
 1. **Peticiones por minuto** - Gráfico de líneas
+
    ```flux
    from(bucket: "your-bucket")
      |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
@@ -203,6 +215,7 @@ Puedes crear un dashboard en Grafana con los siguientes paneles:
    ```
 
 2. **Latencia media del endpoint /stream** - Gráfico de líneas
+
    ```flux
    from(bucket: "your-bucket")
      |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
@@ -212,6 +225,7 @@ Puedes crear un dashboard en Grafana con los siguientes paneles:
    ```
 
 3. **Conexiones SSE activas** - Gauge o gráfico de líneas
+
    ```flux
    from(bucket: "your-bucket")
      |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
@@ -221,6 +235,7 @@ Puedes crear un dashboard en Grafana con los siguientes paneles:
    ```
 
 4. **Percentiles de latencia** (P50, P90, P95, P99) - Gráfico de líneas múltiples
+
    ```flux
    from(bucket: "your-bucket")
      |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
@@ -238,6 +253,7 @@ Puedes crear un dashboard en Grafana con los siguientes paneles:
 3. Verifica los logs de Telegraf: `docker logs telegraf`
 4. Verifica la configuración de red entre la API y Telegraf
 5. Prueba enviar métricas manualmente:
+
    ```bash
    echo "siscom_api.test,app=siscom-api:1|c" | nc -u -w1 localhost 8125
    ```
@@ -258,6 +274,7 @@ Si ves errores tipo "Connection refused" o "Network unreachable":
 2. Si estás en Docker, verifica que los containers pueden comunicarse
 3. Verifica que el puerto 8125/udp no está bloqueado por firewall
 4. Prueba con `telnet` o `nc`:
+
    ```bash
    # Desde el container/host de la API
    nc -u -v -z localhost 8125
@@ -288,4 +305,3 @@ Si la API no puede iniciar después de agregar las métricas:
 - Los timings generan múltiples estadísticas automáticamente (mean, median, percentiles)
 - **aio-statsd** maneja buffers internos para optimizar el envío de métricas
 - La conexión se mantiene abierta durante toda la vida de la aplicación
-

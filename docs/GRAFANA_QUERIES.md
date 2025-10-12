@@ -5,6 +5,7 @@ Guía para crear dashboards y queries en Grafana con las métricas de siscom-api
 ## 🎯 Tipos de Métricas
 
 ### 1. **COUNTER**: `siscom_api.requests`
+
 **¿Qué es?** Un contador acumulativo que se incrementa cada vez que llega una petición.
 
 **¿Para qué sirve?** Ver el total de peticiones en períodos de tiempo definidos.
@@ -14,6 +15,7 @@ Guía para crear dashboards y queries en Grafana con las métricas de siscom-api
 ---
 
 ### 2. **TIMING**: `siscom_api.latency.stream`
+
 **¿Qué es?** Tiempo de respuesta en milisegundos.
 
 **¿Para qué sirve?** Medir performance y detectar latencias altas.
@@ -23,6 +25,7 @@ Guía para crear dashboards y queries en Grafana con las métricas de siscom-api
 ---
 
 ### 3. **GAUGE**: `siscom_api.sse.active_connections`
+
 **¿Qué es?** El número ACTUAL de conexiones SSE activas en este momento.
 
 **¿Para qué sirve?** Monitorear la carga en tiempo real.
@@ -45,7 +48,9 @@ from(bucket: "siscom")
 ```
 
 **Explicación:**
+
 - `aggregateWindow(every: 1m)` - Agrupa por minuto
+
 - `derivative(unit: 1m)` - Calcula la tasa de cambio por minuto
 - `nonNegative: true` - Ignora valores negativos
 
@@ -80,6 +85,7 @@ from(bucket: "siscom")
 **Panel recomendado:** Graph (línea con umbral)
 
 **Umbrales sugeridos:**
+
 - Verde: < 100ms
 - Amarillo: 100-500ms
 - Rojo: > 500ms
@@ -140,16 +146,19 @@ union(tables: [today, yesterday])
 ## 🎨 Dashboard Recomendado
 
 ### Fila 1: Overview (Números Grandes)
+
 1. **Total Requests (24h)** - Stat panel
 2. **Requests por Minuto (actual)** - Stat panel con sparkline
 3. **Conexiones SSE Activas** - Gauge panel
 4. **Latencia Media** - Stat panel con umbrales
 
 ### Fila 2: Gráficos de Tiempo
+
 1. **Requests por Minuto** - Graph (línea)
 2. **Latencia (mean, p95, p99)** - Graph (multi-línea)
 
 ### Fila 3: Análisis Detallado
+
 1. **Conexiones SSE en el Tiempo** - Graph (área)
 2. **Distribución de Latencia** - Heatmap (si tienes histogramas)
 
@@ -195,18 +204,21 @@ Asegúrate de que tu `telegraf.conf` tenga:
 ## 🚨 Alertas Sugeridas
 
 ### 1. Latencia Alta
-```
+
+``` plaintext
 Alert: Latencia > 500ms durante 5 minutos
 Query: mean(siscom_api.latency.stream.mean) > 500
 ```
 
 ### 2. Caída de Tráfico
+
 ```
 Alert: Requests/min < 1 durante 10 minutos (puede indicar problema)
 Query: derivative(siscom_api.requests) < 1
 ```
 
 ### 3. Conexiones SSE Altas
+
 ```
 Alert: Conexiones activas > 100
 Query: last(siscom_api.sse.active_connections) > 100
@@ -217,9 +229,11 @@ Query: last(siscom_api.sse.active_connections) > 100
 ## 🎓 Conceptos Clave
 
 ### ¿Qué es un Counter?
+
 Un contador que **siempre incrementa**. Se resetea cada vez que Telegraf hace flush (cada 10s por defecto).
 
 **Ejemplo:**
+
 ```
 t=0s:  count=0
 t=10s: count=5   (5 requests en 10s)
@@ -230,10 +244,12 @@ t=30s: count=7   (7 requests en los siguientes 10s)
 Para ver "requests por minuto", usas `derivative()` o `rate()`.
 
 ### ¿Qué es un Gauge?
+
 Un valor que puede subir o bajar, representa el **valor actual**.
 
 **Ejemplo:**
-```
+
+```plaintext
 t=0s:  active_connections=0
 t=10s: active_connections=5   (5 clientes conectados)
 t=20s: active_connections=3   (2 se desconectaron)
@@ -243,7 +259,9 @@ t=30s: active_connections=8   (5 nuevos clientes)
 No necesitas `derivative()`, solo muestras el último valor o el promedio.
 
 ### ¿Qué es un Timer?
+
 Mide duraciones y genera automáticamente:
+
 - `mean` (promedio)
 - `median` (p50)
 - `95_percentile` (p95)
@@ -259,16 +277,19 @@ Mide duraciones y genera automáticamente:
 Puedes crear variables para filtrar por:
 
 ### Variable: time_range
-```
+
+``` plaintext
 1m, 5m, 15m, 1h, 6h, 24h, 7d
 ```
 
 ### Variable: percentile
-```
+
+``` plaintext
 50, 90, 95, 99
 ```
 
 Luego en tu query:
+
 ```flux
 |> filter(fn: (r) => r._field == "${percentile}_percentile")
 ```
@@ -277,9 +298,9 @@ Luego en tu query:
 
 ## 🔗 Referencias
 
-- Documentación de Flux: https://docs.influxdata.com/flux/
-- Telegraf StatsD Input: https://github.com/influxdata/telegraf/tree/master/plugins/inputs/statsd
-- Grafana Variables: https://grafana.com/docs/grafana/latest/variables/
+- Documentación de Flux: <https://docs.influxdata.com/flux/>
+- Telegraf StatsD Input: <https://github.com/influxdata/telegraf/tree/master/plugins/inputs/statsd>
+- Grafana Variables: <https://grafana.com/docs/grafana/latest/variables/>
 
 ---
 
@@ -294,4 +315,3 @@ Luego en tu query:
 - [ ] Alertas configuradas para caída de tráfico
 - [ ] Variables para cambiar time range
 - [ ] Comparación con día anterior (opcional)
-

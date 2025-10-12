@@ -54,6 +54,7 @@ Settings → Secrets and variables → Actions → Secrets → New repository se
 Agrega cada uno de los secrets mencionados arriba.
 
 **Importante para `EC2_SSH_KEY`:**
+
 ```bash
 # Copia el contenido completo de tu llave privada:
 cat ~/.ssh/tu_llave_privada.pem
@@ -76,6 +77,7 @@ Agrega cada una de las variables mencionadas arriba.
 #### Variables de StatsD según tu configuración:
 
 **Si Telegraf está en el mismo host que la API:**
+
 ```bash
 STATSD_HOST=localhost
 STATSD_PORT=8126
@@ -83,6 +85,7 @@ STATSD_PREFIX=siscom_api
 ```
 
 **Si Telegraf está en un container Docker:**
+
 ```bash
 # Si usas docker-compose con ambos servicios:
 STATSD_HOST=telegraf
@@ -95,6 +98,7 @@ STATSD_HOST=localhost
 ```
 
 **Si Telegraf está en otro servidor:**
+
 ```bash
 STATSD_HOST=ip.del.servidor.telegraf
 STATSD_PORT=8126
@@ -104,7 +108,8 @@ STATSD_PREFIX=siscom_api
 ## 📝 Ejemplo Completo
 
 ### Secrets
-```
+
+```plaintext
 EC2_HOST = 34.234.56.78
 EC2_USERNAME = ubuntu
 EC2_SSH_KEY = -----BEGIN RSA PRIVATE KEY-----
@@ -117,7 +122,8 @@ JWT_SECRET_KEY = super-secret-key-change-in-production-xyz123
 ```
 
 ### Variables
-```
+
+```plaintext
 # Base de Datos
 DB_HOST = 10.0.1.50
 DB_PORT = 5432
@@ -143,6 +149,7 @@ Después de configurar las variables:
    - Revisa que todos los secrets y variables estén listados
 
 2. **Prueba el deploy:**
+
    ```bash
    # Haz un push a master o ejecuta el workflow manualmente
    git push origin master
@@ -169,6 +176,7 @@ Si ves un error como `STATSD_HOST: variable not set`:
 ### Las métricas no funcionan después del deploy
 
 1. Verifica que las variables se pasaron correctamente:
+
    ```bash
    # Conéctate a tu EC2
    ssh ubuntu@tu-ec2-host
@@ -181,6 +189,7 @@ Si ves un error como `STATSD_HOST: variable not set`:
    ```
 
 2. Verifica que Telegraf puede recibir en ese host/puerto:
+
    ```bash
    # Desde el container de la API
    docker exec -it siscom-api bash
@@ -188,6 +197,7 @@ Si ves un error como `STATSD_HOST: variable not set`:
    ```
 
 3. Verifica los logs de la API:
+
    ```bash
    docker logs siscom-api
    ```
@@ -206,4 +216,3 @@ Si ves un error como `STATSD_HOST: variable not set`:
 - ✅ Las variables normales (no secrets) son visibles en los logs
 - ✅ Los secrets se ofuscan en los logs de GitHub Actions
 - ✅ Rota las llaves SSH y secrets periódicamente
-

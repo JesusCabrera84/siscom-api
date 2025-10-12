@@ -31,6 +31,7 @@ STATSD_PREFIX=siscom_api
 ```
 
 **Importante:** Si Telegraf está en un container Docker, ajusta `STATSD_HOST`:
+
 - Mismo `docker-compose`: `STATSD_HOST=telegraf`
 - Containers separados: `STATSD_HOST=172.17.0.1` (IP del gateway Docker)
 - Host network mode: `STATSD_HOST=localhost`
@@ -40,6 +41,7 @@ STATSD_PREFIX=siscom_api
 Usa el archivo de configuración incluido: `telegraf-statsd.conf`
 
 Configura las variables de entorno para InfluxDB:
+
 ```bash
 export INFLUX_TOKEN="tu-token-aqui"
 export INFLUX_ORG="tu-organizacion"
@@ -85,6 +87,7 @@ from(bucket:"tu-bucket")
 ### Consultas útiles
 
 **Peticiones por minuto:**
+
 ```flux
 from(bucket: "tu-bucket")
   |> range(start: -1h)
@@ -94,6 +97,7 @@ from(bucket: "tu-bucket")
 ```
 
 **Latencia media del endpoint /stream:**
+
 ```flux
 from(bucket: "tu-bucket")
   |> range(start: -1h)
@@ -103,6 +107,7 @@ from(bucket: "tu-bucket")
 ```
 
 **Conexiones SSE activas:**
+
 ```flux
 from(bucket: "tu-bucket")
   |> range(start: -1h)
@@ -116,6 +121,7 @@ from(bucket: "tu-bucket")
 ### Las métricas no llegan a InfluxDB
 
 1. **Verificar que Telegraf está corriendo:**
+
    ```bash
    docker ps | grep telegraf
    # o
@@ -123,6 +129,7 @@ from(bucket: "tu-bucket")
    ```
 
 2. **Verificar logs de Telegraf:**
+
    ```bash
    docker logs telegraf
    # o
@@ -130,11 +137,13 @@ from(bucket: "tu-bucket")
    ```
 
 3. **Verificar que el puerto 8125/udp está abierto:**
+
    ```bash
    netstat -ulnp | grep 8125
    ```
 
 4. **Probar conectividad UDP:**
+
    ```bash
    # Enviar métrica de prueba con tags en formato InfluxDB
    echo "siscom_api.test,app=siscom-api:1|c" | nc -u -w1 localhost 8125
@@ -158,6 +167,7 @@ from(bucket: "tu-bucket")
 Esto es normal si Telegraf no está corriendo. **aio-statsd** usa UDP, que no requiere conexión establecida. La API debería iniciar correctamente incluso si Telegraf no está disponible.
 
 Si la API no inicia por otros motivos:
+
 1. Verifica que instalaste `aio-statsd`: `pip show aio-statsd`
 2. Verifica las variables de entorno en `.env`
 3. Revisa los logs de la API para errores específicos
@@ -170,9 +180,10 @@ Si la API no inicia por otros motivos:
 - **Formato nativo:** Tags en formato InfluxDB (más eficiente)
 - **Robusto:** Maneja errores de red sin impactar la aplicación
 
-## 🎉 ¡Listo!
+## 🎉 ¡Listo
 
 Las métricas ahora se están enviando automáticamente a Telegraf cada vez que:
+
 - ✅ Se recibe una petición HTTP (cualquier endpoint)
 - ✅ Se procesa una petición al endpoint `/stream` (se mide la latencia)
 - ✅ Un cliente se conecta o desconecta de un endpoint SSE
@@ -188,6 +199,7 @@ Ver [METRICS.md](METRICS.md) para documentación detallada.
 Si vienes de la implementación con `statsd` sincrónica, estos son los cambios principales:
 
 1. **Async/await:** Todos los métodos ahora usan `await`
+
    ```python
    # Antes (statsd)
    metrics_client.increment("requests")
@@ -197,6 +209,7 @@ Si vienes de la implementación con `statsd` sincrónica, estos son los cambios 
    ```
 
 2. **Lifecycle management:** Conexión y cierre manejados en `lifespan` de FastAPI
+
    ```python
    @asynccontextmanager
    async def lifespan(app: FastAPI):
@@ -206,10 +219,10 @@ Si vienes de la implementación con `statsd` sincrónica, estos son los cambios 
    ```
 
 3. **Formato de tags:** InfluxDB nativo en lugar de Datadog
+
    ```python
    # aio-statsd usa: metric,tag1=value1,tag2=value2:value|type
    # En lugar de: metric:value|type|#tag1:value1,tag2:value2
    ```
 
 4. **Sin bloqueo del event loop:** Completamente asíncrono, no bloquea ninguna operación
-
