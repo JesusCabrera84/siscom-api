@@ -31,6 +31,12 @@ services:
       STATSD_HOST: ${STATSD_HOST:-localhost}
       STATSD_PORT: ${STATSD_PORT:-8126}
       STATSD_PREFIX: ${STATSD_PREFIX:-siscom_api}
+      
+      # MQTT Configuration
+      BROKER_HOST: ${BROKER_HOST:-localhost:1883}
+      BROKER_TOPIC: ${BROKER_TOPIC:-#}
+      MQTT_USERNAME: ${MQTT_USERNAME}
+      MQTT_PASSWORD: ${MQTT_PASSWORD}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
       interval: 30s

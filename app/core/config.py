@@ -32,6 +32,12 @@ class Settings(BaseSettings):
     )
     STATSD_PREFIX: str = "siscom_api"
 
+    # MQTT Configuration
+    BROKER_HOST: str = "localhost:1883"
+    BROKER_TOPIC: str = "#"
+    MQTT_USERNAME: str = ""
+    MQTT_PASSWORD: str = ""
+
     # Para compatibilidad con código existente que use DATABASE_URL
     @property
     def DATABASE_URL(self) -> str:

@@ -52,7 +52,7 @@ class MetricsClient:
             await self.ensure_connected()
             metric = f"{self.prefix}.latency.{endpoint}"
             assert self.client is not None
-            self.client.timing(metric, duration_ms)  # ⚠️ NO es async
+            self.client.timer(metric, duration_ms)  # Enviar métrica de timing
         except Exception as e:
             print(f"[Metrics] Error timing: {e}")
 

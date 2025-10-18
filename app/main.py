@@ -4,9 +4,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import communications
+from app.api.routes import communications, stream
 from app.core.config import settings
 from app.core.middleware import MetricsMiddleware
+from app.services.mqtt_client import mqtt_client
 from app.utils.metrics import metrics_client
 
 # Configurar logging
@@ -24,7 +25,23 @@ async def lifespan(_app: FastAPI):
     """Manejo del ciclo de vida de la aplicación."""
     # Startup: Conectar cliente de métricas
     await metrics_client.ensure_connected()
+
+    # Startup: Conectar cliente MQTT
+    try:
+        mqtt_client.connect()
+        logging.info("Cliente MQTT inicializado")
+    except Exception as e:
+        logging.error(f"Error al inicializar cliente MQTT: {e}")
+
     yield
+
+    # Shutdown: Cerrar cliente MQTT
+    try:
+        mqtt_client.disconnect()
+        logging.info("Cliente MQTT desconectado")
+    except Exception as e:
+        logging.error(f"Error al desconectar cliente MQTT: {e}")
+
     # Shutdown: Cerrar cliente de métricas
     await metrics_client.close()
 
@@ -63,3 +80,4 @@ async def health_check():
 
 # Incluir routers API v1
 app.include_router(communications.router)
+app.include_router(stream.router)

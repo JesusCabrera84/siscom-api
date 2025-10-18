@@ -18,6 +18,9 @@ passlib[bcrypt]
 # --- Server-Sent Events ---
 sse-starlette
 
+# --- MQTT Client ---
+paho-mqtt
+
 # --- Logging y utilidades ---
 loguru
 

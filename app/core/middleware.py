@@ -20,7 +20,7 @@ class MetricsMiddleware(BaseHTTPMiddleware):
         client_host = request.client.host if request.client else "unknown"
 
         # Log de TODAS las peticiones (antes de filtrar)
-        logger.info(
+        logger.debug(
             f"📨 Request: {method} {path} | Client: {client_host} | "
             f"User-Agent: {request.headers.get('user-agent', 'N/A')[:50]}"
         )

@@ -8,6 +8,7 @@ API FastAPI para gestión de comunicaciones de dispositivos GPS (Suntech y Quecl
 - ✅ PostgreSQL con SQLAlchemy async
 - ✅ Autenticación JWT
 - ✅ Server-Sent Events (SSE) para streaming
+- ✅ Integración MQTT con Mosquitto para eventos en tiempo real
 - ✅ Pool de conexiones optimizado
 - ✅ Health checks
 - ✅ CORS configurable
@@ -82,6 +83,12 @@ ALLOWED_ORIGINS=*
 STATSD_HOST=localhost
 STATSD_PORT=8126
 STATSD_PREFIX=siscom_api
+
+# MQTT Configuration
+BROKER_HOST=localhost:1883
+BROKER_TOPIC=#
+MQTT_USERNAME=mqtt_user
+MQTT_PASSWORD=mqtt_password
 ```
 
 ### 5. Ejecutar la aplicación
@@ -255,6 +262,7 @@ docker compose up -d
 | **[📊 Métricas](docs/METRICS.md)**                  | Sistema de métricas StatsD/Telegraf/InfluxDB           |
 | **[📈 Queries Grafana](docs/GRAFANA_QUERIES.md)**   | Dashboards y queries para visualizar métricas          |
 | **[🚀 Deployment](docs/DEPLOYMENT.md)**             | Guía de despliegue en EC2 con GitHub Actions           |
+| **[🔌 MQTT Integration](docs/MQTT_INTEGRATION.md)** | Integración con Mosquitto para streaming en tiempo real |
 | **[📖 Swagger UI](http://localhost:8000/api/docs)** | Documentación interactiva (servidor corriendo)         |
 
 ### Endpoints REST v1
@@ -279,28 +287,37 @@ GET /api/v1/devices/{device_id}/communications
 Authorization: Bearer {token}
 ```
 
-#### Stream SSE - Múltiples Dispositivos
+#### Stream SSE - Eventos en Tiempo Real (MQTT)
+
+Endpoint de streaming que consume mensajes de Mosquitto y los transmite vía Server-Sent Events:
 
 ```http
-GET /api/v1/communications/stream?device_ids=867564050638581&device_ids=DEVICE123
+# Todos los dispositivos
+GET /api/v1/stream
+Accept: text/event-stream
+
+# Filtrar por device_ids
+GET /api/v1/stream?device_ids=0848086072,0848086073
 Accept: text/event-stream
 ```
 
-#### Stream SSE - Un Solo Dispositivo
+**Ejemplo con curl:**
 
-```http
-GET /api/v1/devices/{device_id}/communications/stream
-Accept: text/event-stream
+```bash
+curl -N "http://localhost:8000/api/v1/stream?device_ids=0848086072"
 ```
+
+Ver [MQTT_INTEGRATION.md](docs/MQTT_INTEGRATION.md) para más detalles sobre la integración MQTT.
 
 ### Tabla de Endpoints
 
 | Endpoint                                                | Método | Auth   | Descripción                          |
 | ------------------------------------------------------- | ------ | ------ | ------------------------------------ |
+| `GET /health`                                           | GET    | ❌ No  | Health check del servicio            |
 | `GET /api/v1/communications`                            | GET    | ✅ JWT | Histórico de múltiples dispositivos  |
-| `GET /api/v1/communications/stream`                     | GET    | ❌ No  | Stream SSE de múltiples dispositivos |
 | `GET /api/v1/devices/{device_id}/communications`        | GET    | ✅ JWT | Histórico de un solo dispositivo     |
-| `GET /api/v1/devices/{device_id}/communications/stream` | GET    | ❌ No  | Stream SSE de un solo dispositivo    |
+| `GET /api/v1/stream`                                    | GET    | ❌ No  | Stream SSE con mensajes MQTT         |
+| `GET /api/v1/stream?device_ids={ids}`                   | GET    | ❌ No  | Stream SSE filtrado por dispositivos |
 
 ## 🏗️ Arquitectura
 
@@ -316,7 +333,10 @@ siscom-api/
 │   │   └── security.py      # JWT y autenticación
 │   ├── models/              # Modelos SQLAlchemy
 │   ├── schemas/             # Schemas Pydantic
-│   ├── services/            # Lógica de negocio
+│   ├── services/
+│   │   ├── mqtt_client.py   # Cliente MQTT para Mosquitto
+│   │   ├── repository.py    # Repositorio de datos
+│   │   └── sse.py           # Lógica SSE (opcional)
 │   ├── utils/
 │   │   ├── exceptions.py    # Excepciones personalizadas
 │   │   ├── logger.py        # Logging
@@ -327,7 +347,8 @@ siscom-api/
 │   ├── POSTMAN_EXAMPLES.md  # 📮 Ejemplos de uso
 │   ├── METRICS.md           # 📊 Sistema de métricas
 │   ├── GRAFANA_QUERIES.md   # 📈 Queries y dashboards
-│   └── DEPLOYMENT.md        # 🚀 Guía de deployment
+│   ├── DEPLOYMENT.md        # 🚀 Guía de deployment
+│   └── MQTT_INTEGRATION.md  # 🔌 Integración MQTT/Mosquitto
 ├── test/                    # Tests unitarios e integración
 ├── scripts/                 # Scripts de utilidad
 ├── .github/
@@ -518,6 +539,7 @@ Ver documentación completa en [METRICS.md](docs/METRICS.md)
 - ✅ Variables de entorno bien estructuradas
 - ✅ **Suite completa de tests con pytest (50+ tests, ~95% coverage)**
 - ✅ **Métricas StatsD con aio-statsd para Telegraf/InfluxDB**
+- ✅ **Integración MQTT con Mosquitto para streaming en tiempo real**
 
 ### Por Implementar
 
@@ -527,7 +549,6 @@ Ver documentación completa en [METRICS.md](docs/METRICS.md)
 - ⚠️ Caché (Redis) para consultas frecuentes
 - ⚠️ Documentación de esquemas con Pydantic
 - ⚠️ Migraciones de base de datos (Alembic)
-- ⚠️ WebSockets o RabbitMQ para eventos en tiempo real
 - ⚠️ Índices de base de datos optimizados
 
 ## 🤝 Contribuir
