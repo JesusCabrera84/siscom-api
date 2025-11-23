@@ -31,7 +31,9 @@ async def get_communications(session, device_ids: list[str]):
     return suntech + queclink
 
 
-async def get_latest_communications(session, device_ids: list[str]):
+async def get_latest_communications(
+    session, device_ids: list[str], msg_class: str | None = None
+):
     """
     Obtiene la última comunicación registrada de cada dispositivo especificado.
 
@@ -41,6 +43,7 @@ async def get_latest_communications(session, device_ids: list[str]):
     Args:
         session: Sesión de base de datos
         device_ids: Lista de IDs de dispositivos
+        msg_class: Filtro opcional por tipo de clase de mensaje (ej: "ALERT", "STATUS")
 
     Returns:
         Lista con la última comunicación de cada dispositivo solicitado
@@ -48,6 +51,10 @@ async def get_latest_communications(session, device_ids: list[str]):
     query = select(CommunicationCurrentState).where(
         CommunicationCurrentState.device_id.in_(device_ids)
     )
+
+    # Agregar filtro por msg_class si se proporciona
+    if msg_class is not None:
+        query = query.where(CommunicationCurrentState.msg_class == msg_class)
 
     result = (await session.execute(query)).scalars().all()
     return result

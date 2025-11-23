@@ -118,8 +118,14 @@ async def get_latest_communications_endpoint(  # noqa: B008
     "/devices/{device_id}/communications/latest",
     response_model=CommunicationLatestResponse,
 )
-async def get_device_latest_communication(
+async def get_device_latest_communication(  # noqa: B008
     device_id: str,
+    class_: str = Query(
+        "STATUS",
+        alias="class",
+        description="Filtro por tipo de clase de mensaje (ALERT o STATUS)",
+        example="STATUS",
+    ),
     db=Depends(get_db),
 ):
     """
@@ -130,9 +136,14 @@ async def get_device_latest_communication(
     **Path Parameters:**
     - `device_id`: ID del dispositivo GPS
 
-    **Ejemplo:**
+    **Query Parameters:**
+    - `class`: Tipo de clase de mensaje para filtrar (ALERT o STATUS). Default: STATUS
+
+    **Ejemplos:**
     ```
     GET /api/v1/devices/867564050638581/communications/latest
+    GET /api/v1/devices/867564050638581/communications/latest?class=STATUS
+    GET /api/v1/devices/867564050638581/communications/latest?class=ALERT
     ```
 
     **Diferencias:**
@@ -146,7 +157,7 @@ async def get_device_latest_communication(
     - Última comunicación del dispositivo especificado
     - Error 404 si el dispositivo no existe o no tiene comunicaciones
     """
-    result = await get_latest_communications(db, [device_id])
+    result = await get_latest_communications(db, [device_id], msg_class=class_)
 
     if not result:
         raise HTTPException(
