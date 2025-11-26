@@ -5,9 +5,9 @@ Este módulo contiene fixtures reutilizables para tests.
 """
 
 import asyncio
+from collections.abc import AsyncGenerator, Generator
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import AsyncGenerator, Generator
 
 import pytest
 from fastapi.testclient import TestClient
@@ -21,7 +21,6 @@ from app.core.database import get_db
 from app.core.security import create_access_token
 from app.main import app
 from app.models.communications import Base, CommunicationQueclink, CommunicationSuntech
-
 
 # ============================================================================
 # Configuración de Base de Datos de Test
@@ -73,9 +72,9 @@ async def setup_test_database():
     # Crear todas las tablas
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    
+
     yield
-    
+
     # Eliminar todas las tablas
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
@@ -99,7 +98,7 @@ def override_get_db(db_session: AsyncSession):
     """
     async def _get_db_override():
         yield db_session
-    
+
     return _get_db_override
 
 
@@ -113,10 +112,10 @@ def client(override_get_db) -> Generator:
     Cliente de test síncrono con TestClient.
     """
     app.dependency_overrides[get_db] = override_get_db
-    
+
     with TestClient(app) as test_client:
         yield test_client
-    
+
     app.dependency_overrides.clear()
 
 
@@ -126,10 +125,10 @@ async def async_client(override_get_db) -> AsyncGenerator:
     Cliente de test asíncrono con httpx.AsyncClient.
     """
     app.dependency_overrides[get_db] = override_get_db
-    
+
     async with AsyncClient(app=app, base_url="http://test") as ac:
         yield ac
-    
+
     app.dependency_overrides.clear()
 
 
@@ -153,7 +152,7 @@ def expired_token() -> str:
     data = {"sub": "test_user", "user_id": 1}
     expire = datetime.utcnow() - timedelta(minutes=10)  # Expirado hace 10 minutos
     data.update({"exp": expire})
-    
+
     from jose import jwt
     return jwt.encode(data, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
@@ -200,11 +199,11 @@ async def sample_suntech_communication(db_session: AsyncSession):
         fix_status="VALID",
         alert_type=None,
     )
-    
+
     db_session.add(comm)
     await db_session.commit()
     await db_session.refresh(comm)
-    
+
     return comm
 
 
@@ -230,11 +229,11 @@ async def sample_queclink_communication(db_session: AsyncSession):
         fix_status="VALID",
         alert_type="SPEED",
     )
-    
+
     db_session.add(comm)
     await db_session.commit()
     await db_session.refresh(comm)
-    
+
     return comm
 
 
@@ -244,7 +243,7 @@ async def multiple_communications(db_session: AsyncSession):
     Crea múltiples registros de comunicaciones para tests.
     """
     communications = []
-    
+
     # 3 registros Suntech
     for i in range(3):
         comm = CommunicationSuntech(
@@ -260,7 +259,7 @@ async def multiple_communications(db_session: AsyncSession):
         )
         db_session.add(comm)
         communications.append(comm)
-    
+
     # 2 registros Queclink
     for i in range(2):
         comm = CommunicationQueclink(
@@ -276,12 +275,12 @@ async def multiple_communications(db_session: AsyncSession):
         )
         db_session.add(comm)
         communications.append(comm)
-    
+
     await db_session.commit()
-    
+
     for comm in communications:
         await db_session.refresh(comm)
-    
+
     return communications
 
 

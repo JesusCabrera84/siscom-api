@@ -28,8 +28,7 @@ async def lifespan(_app: FastAPI):
     # Startup: Verificar conexión a la base de datos
     try:
         async with engine.connect() as conn:
-            result = await conn.execute(text("SELECT 1"))
-            test_value = result.scalar()
+            await conn.execute(text("SELECT 1"))
             logging.info("✓ Conexión a base de datos exitosa")
     except Exception as e:
         logging.error("✗ Error al conectar con la base de datos")

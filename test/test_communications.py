@@ -9,15 +9,15 @@ from fastapi.testclient import TestClient
 @pytest.mark.integration
 class TestCommunicationsEndpointMultiple:
     """Tests para GET /api/v1/communications (múltiples dispositivos)."""
-    
+
     def test_get_communications_requires_auth(self, client: TestClient):
         """
         Test: Endpoint requiere autenticación.
         """
         response = client.get("/api/v1/communications?device_ids=TEST123")
-        
+
         assert response.status_code == 403  # FastAPI retorna 403 sin auth
-    
+
     def test_get_communications_with_valid_token(
         self,
         client: TestClient,
@@ -31,10 +31,10 @@ class TestCommunicationsEndpointMultiple:
             "/api/v1/communications?device_ids=867564050638581",
             headers=auth_headers
         )
-        
+
         assert response.status_code == 200
         assert isinstance(response.json(), list)
-    
+
     def test_get_communications_with_expired_token(
         self,
         client: TestClient,
@@ -48,9 +48,9 @@ class TestCommunicationsEndpointMultiple:
             "/api/v1/communications?device_ids=TEST123",
             headers=headers
         )
-        
+
         assert response.status_code == 401
-    
+
     def test_get_communications_with_invalid_token(
         self,
         client: TestClient,
@@ -64,9 +64,9 @@ class TestCommunicationsEndpointMultiple:
             "/api/v1/communications?device_ids=TEST123",
             headers=headers
         )
-        
+
         assert response.status_code == 401
-    
+
     def test_get_communications_returns_correct_data(
         self,
         client: TestClient,
@@ -80,16 +80,16 @@ class TestCommunicationsEndpointMultiple:
             "/api/v1/communications?device_ids=867564050638581",
             headers=auth_headers
         )
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         assert len(data) == 1
         assert data[0]["device_id"] == "867564050638581"
         assert "latitude" in data[0]
         assert "longitude" in data[0]
         assert "speed" in data[0]
-    
+
     def test_get_communications_multiple_devices(
         self,
         client: TestClient,
@@ -103,16 +103,16 @@ class TestCommunicationsEndpointMultiple:
             "/api/v1/communications?device_ids=SUNTECH0&device_ids=SUNTECH1&device_ids=QUECLINK0",
             headers=auth_headers
         )
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         assert len(data) == 3
         device_ids = {item["device_id"] for item in data}
         assert "SUNTECH0" in device_ids
         assert "SUNTECH1" in device_ids
         assert "QUECLINK0" in device_ids
-    
+
     def test_get_communications_merges_suntech_and_queclink(
         self,
         client: TestClient,
@@ -127,15 +127,15 @@ class TestCommunicationsEndpointMultiple:
             "/api/v1/communications?device_ids=867564050638581&device_ids=QUECLINK123",
             headers=auth_headers
         )
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         assert len(data) == 2
         device_ids = {item["device_id"] for item in data}
         assert "867564050638581" in device_ids  # Suntech
         assert "QUECLINK123" in device_ids      # Queclink
-    
+
     def test_get_communications_empty_result(
         self,
         client: TestClient,
@@ -148,10 +148,10 @@ class TestCommunicationsEndpointMultiple:
             "/api/v1/communications?device_ids=NONEXISTENT999",
             headers=auth_headers
         )
-        
+
         assert response.status_code == 200
         assert response.json() == []
-    
+
     def test_get_communications_missing_device_ids(
         self,
         client: TestClient,
@@ -164,22 +164,22 @@ class TestCommunicationsEndpointMultiple:
             "/api/v1/communications",
             headers=auth_headers
         )
-        
+
         assert response.status_code == 422
 
 
 @pytest.mark.integration
 class TestCommunicationsSingleDeviceEndpoint:
     """Tests para GET /api/v1/devices/{device_id}/communications."""
-    
+
     def test_get_device_communications_requires_auth(self, client: TestClient):
         """
         Test: Endpoint requiere autenticación.
         """
         response = client.get("/api/v1/devices/TEST123/communications")
-        
+
         assert response.status_code == 403
-    
+
     def test_get_device_communications_with_valid_token(
         self,
         client: TestClient,
@@ -193,10 +193,10 @@ class TestCommunicationsSingleDeviceEndpoint:
             "/api/v1/devices/867564050638581/communications",
             headers=auth_headers
         )
-        
+
         assert response.status_code == 200
         assert isinstance(response.json(), list)
-    
+
     def test_get_device_communications_returns_correct_device(
         self,
         client: TestClient,
@@ -210,13 +210,13 @@ class TestCommunicationsSingleDeviceEndpoint:
             "/api/v1/devices/SUNTECH1/communications",
             headers=auth_headers
         )
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         assert len(data) == 1
         assert data[0]["device_id"] == "SUNTECH1"
-    
+
     def test_get_device_communications_nonexistent_device(
         self,
         client: TestClient,
@@ -229,7 +229,7 @@ class TestCommunicationsSingleDeviceEndpoint:
             "/api/v1/devices/NONEXISTENT/communications",
             headers=auth_headers
         )
-        
+
         assert response.status_code == 200
         assert response.json() == []
 
@@ -237,7 +237,7 @@ class TestCommunicationsSingleDeviceEndpoint:
 @pytest.mark.integration
 class TestSSEStreamEndpoints:
     """Tests para endpoints de Server-Sent Events."""
-    
+
     def test_sse_stream_multiple_devices_no_auth_required(
         self,
         client: TestClient,
@@ -253,10 +253,10 @@ class TestSSEStreamEndpoints:
             headers=sse_headers,
             timeout=1  # Timeout corto para no esperar indefinidamente
         )
-        
+
         # Debería aceptar la conexión (200)
         assert response.status_code == 200
-    
+
     def test_sse_stream_requires_accept_header(self, client: TestClient):
         """
         Test: Verificar que el endpoint acepta el header correcto.
@@ -266,9 +266,9 @@ class TestSSEStreamEndpoints:
             headers={"Accept": "text/event-stream"},
             timeout=1
         )
-        
+
         assert response.status_code == 200
-    
+
     def test_sse_stream_single_device_no_auth_required(
         self,
         client: TestClient,
@@ -282,9 +282,9 @@ class TestSSEStreamEndpoints:
             headers=sse_headers,
             timeout=1
         )
-        
+
         assert response.status_code == 200
-    
+
     def test_sse_stream_missing_device_ids(self, client: TestClient):
         """
         Test: Stream sin device_ids retorna 422.
@@ -293,14 +293,14 @@ class TestSSEStreamEndpoints:
             "/api/v1/communications/stream",
             headers={"Accept": "text/event-stream"}
         )
-        
+
         assert response.status_code == 422
 
 
 @pytest.mark.integration
 class TestCommunicationsResponseSchema:
     """Tests para verificar el schema de respuestas."""
-    
+
     def test_response_has_required_fields(
         self,
         client: TestClient,
@@ -314,9 +314,9 @@ class TestCommunicationsResponseSchema:
             "/api/v1/communications?device_ids=867564050638581",
             headers=auth_headers
         )
-        
+
         data = response.json()[0]
-        
+
         required_fields = [
             "id",
             "device_id",
@@ -326,10 +326,10 @@ class TestCommunicationsResponseSchema:
             "course",
             "gps_datetime",
         ]
-        
+
         for field in required_fields:
             assert field in data
-    
+
     def test_response_handles_null_values(
         self,
         client: TestClient,
@@ -340,7 +340,7 @@ class TestCommunicationsResponseSchema:
         Test: Respuesta maneja correctamente valores NULL.
         """
         from app.models.communications import CommunicationSuntech
-        
+
         # Crear comunicación con valores NULL
         comm = CommunicationSuntech(
             device_id="NULL_TEST",
@@ -350,14 +350,14 @@ class TestCommunicationsResponseSchema:
         )
         db_session.add(comm)
         await db_session.commit()
-        
+
         response = client.get(
             "/api/v1/communications?device_ids=NULL_TEST",
             headers=auth_headers
         )
-        
+
         data = response.json()[0]
-        
+
         assert data["device_id"] == "NULL_TEST"
         assert data["latitude"] is None
         assert data["longitude"] is None
