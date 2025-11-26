@@ -101,7 +101,6 @@ class CommunicationLatestResponse(BaseModel):
     speed: Decimal | None = None
     received_epoch: int | None = None
     received_at: datetime | None = None
-    alert_type: str | None = None
 
     class Config:
         from_attributes = True  # Para SQLAlchemy models
@@ -126,6 +125,5 @@ class CommunicationLatestResponse(BaseModel):
                 "delivery_type": "GPRS",
                 "received_epoch": 1705318201,
                 "received_at": "2024-01-15T10:30:01",
-                "alert_type": None,
             }
         }

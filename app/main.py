@@ -3,9 +3,11 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 
 from app.api.routes import communications, stream
 from app.core.config import settings
+from app.core.database import engine
 from app.core.middleware import MetricsMiddleware
 from app.services.mqtt_client import mqtt_client
 from app.utils.metrics import metrics_client
@@ -23,6 +25,16 @@ logging.getLogger("app.core.middleware").setLevel(logging.INFO)
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     """Manejo del ciclo de vida de la aplicación."""
+    # Startup: Verificar conexión a la base de datos
+    try:
+        async with engine.connect() as conn:
+            result = await conn.execute(text("SELECT 1"))
+            test_value = result.scalar()
+            logging.info("✓ Conexión a base de datos exitosa")
+    except Exception as e:
+        logging.error("✗ Error al conectar con la base de datos")
+        logging.error(f"✗ Detalles: {e}")
+
     # Startup: Conectar cliente de métricas
     await metrics_client.ensure_connected()
 

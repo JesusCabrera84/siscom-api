@@ -96,4 +96,3 @@ class CommunicationCurrentState(Base):
     speed = Column(Numeric)
     received_epoch = Column(BigInteger)
     received_at = Column(DateTime)
-    alert_type = Column(String)
