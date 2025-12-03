@@ -294,4 +294,13 @@ async def stream_shared_location(
                 "data": json.dumps({"message": "Stream error"}),
             }
 
-    return EventSourceResponse(event_generator(), ping=60)
+    # 3. Retornar con headers específicos para SSE en HTTP/2
+    return EventSourceResponse(
+        event_generator(),
+        headers={
+            "Cache-Control": "no-cache, no-transform",
+            "X-Accel-Buffering": "no",  # Para nginx
+            "Connection": "keep-alive",
+        },
+        ping=60,
+    )

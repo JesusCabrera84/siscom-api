@@ -96,4 +96,12 @@ async def stream(request: Request, device_ids: str | None = None):
         EventSourceResponse con eventos de dispositivos
     """
     generator = sse_generator(device_ids, request)
-    return EventSourceResponse(generator, ping=60)  # Pings cada 60 segundos
+    return EventSourceResponse(
+        generator,
+        headers={
+            "Cache-Control": "no-cache, no-transform",
+            "X-Accel-Buffering": "no",  # Para nginx
+            "Connection": "keep-alive",
+        },
+        ping=60,
+    )  # Pings cada 60 segundos
