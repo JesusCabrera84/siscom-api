@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     ALLOWED_ORIGINS: str = "*"
 
     # Métricas StatsD
+    STATSD_ENABLED: bool = False  # Cambiar a True cuando tengas StatsD corriendo
     STATSD_HOST: str = "localhost"
     STATSD_PORT: int = (
         8126  # Puerto dedicado para siscom-api (8125 reservado para otros proyectos)
@@ -33,10 +34,10 @@ class Settings(BaseSettings):
     STATSD_PREFIX: str = "siscom_api"
 
     # MQTT Configuration
-    BROKER_HOST: str = "localhost:1883"
-    BROKER_TOPIC: str = "#"
-    MQTT_USERNAME: str = ""
-    MQTT_PASSWORD: str = ""
+    BROKER_HOST: str = "34.237.30.30:1883"
+    BROKER_TOPIC: str = "tracking/data"
+    MQTT_USERNAME: str = "administrator"
+    MQTT_PASSWORD: str = "ewioquiowuqpweiqouewqpDDSa4asda55"
 
     # Para compatibilidad con código existente que use DATABASE_URL
     @property
