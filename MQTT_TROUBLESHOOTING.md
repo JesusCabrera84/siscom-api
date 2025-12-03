@@ -15,6 +15,7 @@ El **código de error 7** en MQTT significa **"Error de conexión de red / Broke
 ## Cambios Implementados
 
 ### 1. Client ID Único
+
 ```python
 # ANTES: Client ID estático (causaba conflictos)
 client_id=f"siscom-api-{settings.APP_NAME}"
@@ -26,6 +27,7 @@ unique_client_id = f"siscom-api-{settings.APP_NAME}-{uuid.uuid4().hex[:8]}"
 **Por qué**: Si tienes múltiples instancias o reinicios rápidos, el broker desconecta la conexión anterior cuando detecta el mismo client_id.
 
 ### 2. Clean Session False
+
 ```python
 # ANTES
 clean_session=True
@@ -37,6 +39,7 @@ clean_session=False
 **Por qué**: Con `clean_session=False`, el broker mantiene las suscripciones y mensajes pendientes incluso si el cliente se desconecta temporalmente.
 
 ### 3. Keep-alive Incrementado
+
 ```python
 # ANTES
 keepalive=60
@@ -48,6 +51,7 @@ keepalive=120
 **Por qué**: Un keep-alive más largo tolera mejor latencias de red y evita desconexiones por timeouts prematuros.
 
 ### 4. Reconexión Automática Configurada
+
 ```python
 self.client.reconnect_delay_set(min_delay=1, max_delay=120)
 self.client.max_inflight_messages_set(20)
@@ -57,6 +61,7 @@ self.client.max_queued_messages_set(0)
 **Por qué**: Mejora la resiliencia del cliente ante desconexiones temporales.
 
 ### 5. Versión de Protocolo Explícita
+
 ```python
 protocol=mqtt.MQTTv311
 ```
@@ -64,7 +69,9 @@ protocol=mqtt.MQTTv311
 **Por qué**: Especificar la versión evita negociaciones que pueden fallar.
 
 ### 6. Mejor Logging
+
 Ahora los logs incluyen:
+
 - Descripción del error específico
 - Contador de intentos de reconexión
 - Client ID usado en la conexión
@@ -74,6 +81,7 @@ Ahora los logs incluyen:
 Si el problema persiste, verifica:
 
 ### 1. Conexión al Broker
+
 ```bash
 # Probar conexión con mosquitto_sub
 mosquitto_sub -h 34.237.30.30 -p 1883 \
@@ -84,12 +92,15 @@ mosquitto_sub -h 34.237.30.30 -p 1883 \
 ```
 
 ### 2. Límites del Broker
+
 Consulta con el administrador del broker:
+
 - ¿Hay límite de conexiones simultáneas?
 - ¿Hay timeout de inactividad configurado?
 - ¿Las credenciales están vigentes?
 
 ### 3. Red y Firewall
+
 ```bash
 # Verificar conectividad
 ping 34.237.30.30
@@ -102,7 +113,9 @@ nc -zv 34.237.30.30 1883
 ```
 
 ### 4. Variables de Entorno
+
 Verifica que estén configuradas en tu `.env`:
+
 ```env
 BROKER_HOST=34.237.30.30:1883
 BROKER_TOPIC=tracking/data
@@ -112,19 +125,20 @@ MQTT_PASSWORD=tu_password_aquí
 
 ## Códigos de Error MQTT Comunes
 
-| Código | Significado |
-|--------|-------------|
-| 0 | Conexión exitosa |
-| 1 | Versión de protocolo inaceptable |
-| 2 | Client ID rechazado |
-| 3 | Servidor no disponible |
-| 4 | Usuario o contraseña incorrectos |
-| 5 | No autorizado |
-| 7 | **Error de conexión de red / Broker rechaza la conexión** |
+| Código | Significado                                               |
+| ------ | --------------------------------------------------------- |
+| 0      | Conexión exitosa                                          |
+| 1      | Versión de protocolo inaceptable                          |
+| 2      | Client ID rechazado                                       |
+| 3      | Servidor no disponible                                    |
+| 4      | Usuario o contraseña incorrectos                          |
+| 5      | No autorizado                                             |
+| 7      | **Error de conexión de red / Broker rechaza la conexión** |
 
 ## Monitoreo
 
 Puedes monitorear la estabilidad de la conexión observando los logs:
+
 - Si `_reconnect_attempts` aumenta constantemente, hay un problema de red
 - Si se conecta y desconecta inmediatamente, verifica client_id duplicados
 - Si tarda mucho en reconectar, revisa el broker
@@ -132,6 +146,7 @@ Puedes monitorear la estabilidad de la conexión observando los logs:
 ## Contacto con el Administrador del Broker
 
 Si el problema persiste, pregunta al administrador:
+
 1. ¿Hay otros clientes conectados con el mismo client_id?
 2. ¿Cuál es el timeout de keep-alive configurado en el broker?
 3. ¿Hay límite de conexiones por IP?
@@ -223,4 +238,3 @@ STATSD_PREFIX=siscom_api
 ```
 
 **IMPORTANTE**: Con `STATSD_ENABLED=false`, **no verás más estos errores** y la aplicación funcionará normalmente.
-

@@ -89,10 +89,10 @@ GET {{base_url}}/api/v1/communications
 
 **Params (Query):**
 
-| Key | Value |
-|-----|-------|
+| Key          | Value             |
+| ------------ | ----------------- |
 | `device_ids` | `867564050638581` |
-| `device_ids` | `DEVICE123` |
+| `device_ids` | `DEVICE123`       |
 
 **Headers:**
 
@@ -145,10 +145,10 @@ GET {{base_url}}/api/v1/communications/stream
 
 **Params (Query):**
 
-| Key | Value |
-|-----|-------|
+| Key          | Value             |
+| ------------ | ----------------- |
 | `device_ids` | `867564050638581` |
-| `device_ids` | `DEVICE123` |
+| `device_ids` | `DEVICE123`       |
 
 **Headers:**
 
@@ -638,7 +638,7 @@ Si usas `/devices/{device_id}/communications` con un ID inexistente:
 []
 ```
 
-(Respuesta vacía, no error)_
+(Respuesta vacía, no error)\_
 
 ---
 

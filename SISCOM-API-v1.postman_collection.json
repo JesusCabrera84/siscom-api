@@ -111,7 +111,14 @@
         "url": {
           "raw": "{{base_url}}/api/v1/devices/867564050638581/communications/stream",
           "host": ["{{base_url}}"],
-          "path": ["api", "v1", "devices", "867564050638581", "communications", "stream"]
+          "path": [
+            "api",
+            "v1",
+            "devices",
+            "867564050638581",
+            "communications",
+            "stream"
+          ]
         },
         "description": "Suscripción SSE para recibir actualizaciones en tiempo real de UN solo dispositivo.\n\n**Método REST:** GET con path parameter\n\n⚠️ **NOTA:** Postman tiene soporte limitado para SSE.\n\n**Probar con cURL:**\n```bash\ncurl -N 'http://10.8.0.1:8000/api/v1/devices/867564050638581/communications/stream'\n```\n\n**O con JavaScript:**\n```javascript\nconst deviceId = '867564050638581';\nconst eventSource = new EventSource(\n  `http://10.8.0.1:8000/api/v1/devices/${deviceId}/communications/stream`\n);\n\neventSource.addEventListener('update', (event) => {\n  console.log(JSON.parse(event.data));\n});\n```"
       }
@@ -122,9 +129,7 @@
       "listen": "prerequest",
       "script": {
         "type": "text/javascript",
-        "exec": [
-          "console.log('🚀 Request:', pm.info.requestName);"
-        ]
+        "exec": ["console.log('🚀 Request:', pm.info.requestName);"]
       }
     },
     {
@@ -161,4 +166,3 @@
     }
   ]
 }
-

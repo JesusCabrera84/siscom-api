@@ -79,60 +79,38 @@
       {
         "name": "Health Check",
         "description": "Endpoint de salud para monitoreo del servicio",
-        "endpoints": [
-          "GET /health"
-        ],
+        "endpoints": ["GET /health"],
         "authentication": false
       },
       {
         "name": "Histórico de Comunicaciones - Múltiples Dispositivos",
         "description": "Consulta histórica de comunicaciones GPS de múltiples dispositivos simultáneamente",
-        "endpoints": [
-          "GET /api/v1/communications"
-        ],
+        "endpoints": ["GET /api/v1/communications"],
         "authentication": true,
-        "parameters": [
-          "device_ids (query params, array, 1-100 items)"
-        ]
+        "parameters": ["device_ids (query params, array, 1-100 items)"]
       },
       {
         "name": "Histórico de Comunicaciones - Un Dispositivo",
         "description": "Consulta histórica de comunicaciones GPS de un dispositivo específico",
-        "endpoints": [
-          "GET /api/v1/devices/{device_id}/communications"
-        ],
+        "endpoints": ["GET /api/v1/devices/{device_id}/communications"],
         "authentication": true,
-        "parameters": [
-          "device_id (path parameter)"
-        ]
+        "parameters": ["device_id (path parameter)"]
       },
       {
         "name": "Stream SSE - Múltiples Dispositivos",
         "description": "Suscripción a eventos en tiempo real de múltiples dispositivos GPS mediante Server-Sent Events",
-        "endpoints": [
-          "GET /api/v1/communications/stream"
-        ],
+        "endpoints": ["GET /api/v1/communications/stream"],
         "authentication": false,
-        "parameters": [
-          "device_ids (query params, array, 1-50 items)"
-        ],
-        "headers": [
-          "Accept: text/event-stream"
-        ]
+        "parameters": ["device_ids (query params, array, 1-50 items)"],
+        "headers": ["Accept: text/event-stream"]
       },
       {
         "name": "Stream SSE - Un Dispositivo",
         "description": "Suscripción a eventos en tiempo real de un dispositivo GPS específico mediante Server-Sent Events",
-        "endpoints": [
-          "GET /api/v1/devices/{device_id}/communications/stream"
-        ],
+        "endpoints": ["GET /api/v1/devices/{device_id}/communications/stream"],
         "authentication": false,
-        "parameters": [
-          "device_id (path parameter)"
-        ],
-        "headers": [
-          "Accept: text/event-stream"
-        ]
+        "parameters": ["device_id (path parameter)"],
+        "headers": ["Accept: text/event-stream"]
       }
     ],
     "database_models": [

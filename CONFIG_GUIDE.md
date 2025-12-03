@@ -32,6 +32,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES=60
 ```
 
 **⚠️ IMPORTANTE**: Genera una clave segura para producción:
+
 ```bash
 openssl rand -hex 32
 ```
@@ -56,6 +57,7 @@ MQTT_PASSWORD=tu_password_mqtt
 ```
 
 ### Notas sobre MQTT:
+
 - `BROKER_HOST`: Puede incluir el puerto (ej: `host:1883`) o solo el host (por defecto usa puerto 1883)
 - `BROKER_TOPIC`: Topic al que te suscribirás
 - Las credenciales son **opcionales** si tu broker no requiere autenticación
@@ -145,17 +147,17 @@ MQTT_PASSWORD=tu_password_mqtt
 
 Si no especificas alguna variable en `.env`, se usarán estos valores por defecto:
 
-| Variable | Valor por Defecto |
-|----------|------------------|
-| `STATSD_ENABLED` | `false` |
-| `STATSD_HOST` | `localhost` |
-| `STATSD_PORT` | `8126` |
-| `STATSD_PREFIX` | `siscom_api` |
-| `BROKER_HOST` | `localhost:1883` |
-| `BROKER_TOPIC` | `#` |
-| `ALLOWED_ORIGINS` | `*` |
-| `JWT_ALGORITHM` | `HS256` |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | `60` |
+| Variable                      | Valor por Defecto |
+| ----------------------------- | ----------------- |
+| `STATSD_ENABLED`              | `false`           |
+| `STATSD_HOST`                 | `localhost`       |
+| `STATSD_PORT`                 | `8126`            |
+| `STATSD_PREFIX`               | `siscom_api`      |
+| `BROKER_HOST`                 | `localhost:1883`  |
+| `BROKER_TOPIC`                | `#`               |
+| `ALLOWED_ORIGINS`             | `*`               |
+| `JWT_ALGORITHM`               | `HS256`           |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | `60`              |
 
 ## Seguridad
 
@@ -166,4 +168,3 @@ Asegúrate de que `.env` esté en tu `.gitignore`:
 ```bash
 echo ".env" >> .gitignore
 ```
-

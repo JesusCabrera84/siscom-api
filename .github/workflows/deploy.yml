@@ -16,7 +16,7 @@ jobs:
     name: Build and Deploy
     runs-on: ubuntu-latest
     environment: test
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -24,8 +24,8 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
-          cache: 'pip'
+          python-version: "3.11"
+          cache: "pip"
 
       - name: Install linting dependencies
         run: |
@@ -59,7 +59,7 @@ jobs:
           file: ./Dockerfile
           push: false
           tags: siscom-api:latest
-          no-cache: true  # ⚠️ TEMPORAL: Desactivar caché para rebuild con aio-statsd
+          no-cache: true # ⚠️ TEMPORAL: Desactivar caché para rebuild con aio-statsd
           load: true
 
       - name: Save Docker image
@@ -106,13 +106,13 @@ jobs:
           envs: IMAGE_NAME,CONTAINER_NAME,DB_HOST,DB_PORT,DB_USERNAME,DB_PASSWORD,DB_DATABASE,DB_MIN_CONNECTIONS,DB_MAX_CONNECTIONS,DB_CONNECTION_TIMEOUT_SECS,DB_IDLE_TIMEOUT_SECS,BROKER_HOST,BROKER_TOPIC,MQTT_USERNAME,MQTT_PASSWORD,STATSD_HOST,STATSD_PORT,STATSD_PREFIX,PASETO_SECRET_KEY
           script: |
             cd /home/${{ secrets.EC2_USERNAME }}/siscom-api
-            
+
             # Cargar la nueva imagen
             docker load < siscom-api.tar.gz
-            
+
             # Crear la red si no existe
             docker network inspect siscom-network >/dev/null 2>&1 || docker network create siscom-network
-            
+
             # Crear archivo .env con las variables
             cat > .env << EOF
             DB_HOST=${DB_HOST}
@@ -137,13 +137,13 @@ jobs:
             STATSD_PORT=${STATSD_PORT}
             STATSD_PREFIX=${STATSD_PREFIX}
             EOF
-            
+
             # Detener y eliminar el contenedor existente
             docker-compose down || true
-            
+
             # Levantar el nuevo contenedor
             docker-compose up -d
-            
+
             # Esperar a que el contenedor esté saludable
             echo "Esperando a que el contenedor esté saludable..."
             CONTAINER_HEALTHY=false
@@ -164,7 +164,7 @@ jobs:
               
               sleep 2
             done
-            
+
             if [ "$CONTAINER_HEALTHY" = false ]; then
               echo "❌ ERROR: Timeout esperando que el contenedor esté healthy"
               echo "Estado actual: $(docker inspect --format="{{.State.Status}}" ${CONTAINER_NAME})"
@@ -172,7 +172,7 @@ jobs:
               docker logs --tail 50 ${CONTAINER_NAME}
               exit 1
             fi
-            
+
             # Verificar logs en busca de errores críticos
             echo "Verificando logs en busca de errores..."
             if docker logs ${CONTAINER_NAME} 2>&1 | grep -q "Application startup failed"; then
@@ -180,13 +180,13 @@ jobs:
               docker logs --tail 50 ${CONTAINER_NAME}
               exit 1
             fi
-            
+
             # Limpiar imágenes antiguas
             docker image prune -f
-            
+
             # Eliminar el archivo tar.gz
             rm -f siscom-api.tar.gz
-            
+
             echo "✅ Deployment completado exitosamente!"
 
       - name: Verify deployment
@@ -199,7 +199,7 @@ jobs:
           script: |
             echo "=== Verificación Final del Deployment ==="
             echo ""
-            
+
             # Verificar que el contenedor está corriendo
             echo "1. Estado del contenedor:"
             if ! docker ps | grep siscom-api; then
@@ -208,7 +208,7 @@ jobs:
             fi
             echo "✅ Contenedor corriendo"
             echo ""
-            
+
             # Verificar health status
             echo "2. Health status:"
             HEALTH_STATUS=$(docker inspect --format="{{.State.Health.Status}}" siscom-api)
@@ -219,32 +219,32 @@ jobs:
             fi
             echo "✅ Contenedor healthy"
             echo ""
-            
+
             # Verificar que no hay errores críticos en logs
             echo "3. Verificando logs recientes:"
             RECENT_LOGS=$(docker logs --tail 50 siscom-api 2>&1)
-            
+
             if echo "$RECENT_LOGS" | grep -q "Application startup failed"; then
               echo "❌ ERROR: Aplicación falló al iniciar"
               echo "$RECENT_LOGS"
               exit 1
             fi
-            
+
             if echo "$RECENT_LOGS" | grep -q "ModuleNotFoundError"; then
               echo "❌ ERROR: Módulo faltante"
               echo "$RECENT_LOGS"
               exit 1
             fi
-            
+
             if echo "$RECENT_LOGS" | grep -E "ERROR.*Exiting" | grep -v "test"; then
               echo "❌ ERROR: Error crítico encontrado en logs"
               echo "$RECENT_LOGS"
               exit 1
             fi
-            
+
             echo "✅ No se encontraron errores críticos"
             echo ""
-            
+
             # Verificar que el health endpoint responde
             echo "4. Verificando health endpoint:"
             CONTAINER_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' siscom-api)
@@ -254,7 +254,7 @@ jobs:
               echo "⚠️  Warning: No se pudo verificar el health endpoint (puede ser normal si hay firewall)"
             fi
             echo ""
-            
+
             echo "🎉 Deployment verificado exitosamente!"
             echo ""
             echo "=== Últimos logs (informativos) ==="
@@ -265,4 +265,3 @@ jobs:
         run: |
           echo "Deployment failed! Check the logs above for details."
           # Aquí puedes agregar notificaciones a Slack, Discord, email, etc.
-

@@ -255,15 +255,15 @@ docker compose up -d
 
 ### 📖 Documentación Principal
 
-| Documento                                           | Descripción                                            |
-| --------------------------------------------------- | ------------------------------------------------------ |
-| **[📘 API REST Guide](docs/API_REST_GUIDE.md)**     | Documentación completa de todos los endpoints          |
-| **[📮 Ejemplos de Uso](docs/POSTMAN_EXAMPLES.md)**  | Ejemplos con cURL, Postman, JavaScript, Python, Svelte |
-| **[📊 Métricas](docs/METRICS.md)**                  | Sistema de métricas StatsD/Telegraf/InfluxDB           |
-| **[📈 Queries Grafana](docs/GRAFANA_QUERIES.md)**   | Dashboards y queries para visualizar métricas          |
-| **[🚀 Deployment](docs/DEPLOYMENT.md)**             | Guía de despliegue en EC2 con GitHub Actions           |
+| Documento                                           | Descripción                                             |
+| --------------------------------------------------- | ------------------------------------------------------- |
+| **[📘 API REST Guide](docs/API_REST_GUIDE.md)**     | Documentación completa de todos los endpoints           |
+| **[📮 Ejemplos de Uso](docs/POSTMAN_EXAMPLES.md)**  | Ejemplos con cURL, Postman, JavaScript, Python, Svelte  |
+| **[📊 Métricas](docs/METRICS.md)**                  | Sistema de métricas StatsD/Telegraf/InfluxDB            |
+| **[📈 Queries Grafana](docs/GRAFANA_QUERIES.md)**   | Dashboards y queries para visualizar métricas           |
+| **[🚀 Deployment](docs/DEPLOYMENT.md)**             | Guía de despliegue en EC2 con GitHub Actions            |
 | **[🔌 MQTT Integration](docs/MQTT_INTEGRATION.md)** | Integración con Mosquitto para streaming en tiempo real |
-| **[📖 Swagger UI](http://localhost:8000/api/docs)** | Documentación interactiva (servidor corriendo)         |
+| **[📖 Swagger UI](http://localhost:8000/api/docs)** | Documentación interactiva (servidor corriendo)          |
 
 ### Endpoints REST v1
 
@@ -311,13 +311,13 @@ Ver [MQTT_INTEGRATION.md](docs/MQTT_INTEGRATION.md) para más detalles sobre la 
 
 ### Tabla de Endpoints
 
-| Endpoint                                                | Método | Auth   | Descripción                          |
-| ------------------------------------------------------- | ------ | ------ | ------------------------------------ |
-| `GET /health`                                           | GET    | ❌ No  | Health check del servicio            |
-| `GET /api/v1/communications`                            | GET    | ✅ JWT | Histórico de múltiples dispositivos  |
-| `GET /api/v1/devices/{device_id}/communications`        | GET    | ✅ JWT | Histórico de un solo dispositivo     |
-| `GET /api/v1/stream`                                    | GET    | ❌ No  | Stream SSE con mensajes MQTT         |
-| `GET /api/v1/stream?device_ids={ids}`                   | GET    | ❌ No  | Stream SSE filtrado por dispositivos |
+| Endpoint                                         | Método | Auth   | Descripción                          |
+| ------------------------------------------------ | ------ | ------ | ------------------------------------ |
+| `GET /health`                                    | GET    | ❌ No  | Health check del servicio            |
+| `GET /api/v1/communications`                     | GET    | ✅ JWT | Histórico de múltiples dispositivos  |
+| `GET /api/v1/devices/{device_id}/communications` | GET    | ✅ JWT | Histórico de un solo dispositivo     |
+| `GET /api/v1/stream`                             | GET    | ❌ No  | Stream SSE con mensajes MQTT         |
+| `GET /api/v1/stream?device_ids={ids}`            | GET    | ❌ No  | Stream SSE filtrado por dispositivos |
 
 ## 🏗️ Arquitectura
 

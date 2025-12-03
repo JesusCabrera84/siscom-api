@@ -65,13 +65,31 @@
       "name": "CommunicationSuntech",
       "table": "communications_suntech",
       "description": "Comunicaciones de dispositivos GPS marca Suntech",
-      "key_fields": ["device_id", "latitude", "longitude", "speed", "course", "gps_datetime", "odometer", "battery_voltage"]
+      "key_fields": [
+        "device_id",
+        "latitude",
+        "longitude",
+        "speed",
+        "course",
+        "gps_datetime",
+        "odometer",
+        "battery_voltage"
+      ]
     },
     {
       "name": "CommunicationQueclink",
       "table": "communications_queclink",
       "description": "Comunicaciones de dispositivos GPS marca Queclink",
-      "key_fields": ["device_id", "latitude", "longitude", "speed", "course", "gps_datetime", "odometer", "battery_voltage"]
+      "key_fields": [
+        "device_id",
+        "latitude",
+        "longitude",
+        "speed",
+        "course",
+        "gps_datetime",
+        "odometer",
+        "battery_voltage"
+      ]
     }
   ],
   "security": {
@@ -110,4 +128,3 @@
     "openapi_schema": "/api/openapi.json"
   }
 }
-

@@ -93,19 +93,19 @@ curl -N "http://localhost:8000/api/v1/stream?device_ids=0848086072,0848086073"
 ### Cliente JavaScript
 
 ```javascript
-const eventSource = new EventSource('/api/v1/stream?device_ids=0848086072');
+const eventSource = new EventSource("/api/v1/stream?device_ids=0848086072");
 
-eventSource.addEventListener('message', (event) => {
+eventSource.addEventListener("message", (event) => {
   const data = JSON.parse(event.data);
-  console.log('Evento recibido:', data);
+  console.log("Evento recibido:", data);
 });
 
-eventSource.addEventListener('ping', (event) => {
-  console.log('Keep-alive recibido');
+eventSource.addEventListener("ping", (event) => {
+  console.log("Keep-alive recibido");
 });
 
 eventSource.onerror = (error) => {
-  console.error('Error en SSE:', error);
+  console.error("Error en SSE:", error);
   eventSource.close();
 };
 ```
@@ -190,4 +190,3 @@ services:
 - No se hardcodean credenciales en el código
 - El broker MQTT debe configurarse con autenticación
 - Considera usar TLS/SSL para comunicación con el broker en producción
-

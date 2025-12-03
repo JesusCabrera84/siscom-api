@@ -1,9 +1,8 @@
 {
-    "default": true,
-    "MD024": {
-      "siblings_only": true // o false según tu caso
-    },
-    "MD013": false, // desactiva longitud de línea
-    "MD033": false  // permite HTML en markdown
-  }
-  
+  "default": true,
+  "MD024": {
+    "siblings_only": true, // o false según tu caso
+  },
+  "MD013": false, // desactiva longitud de línea
+  "MD033": false, // permite HTML en markdown
+}

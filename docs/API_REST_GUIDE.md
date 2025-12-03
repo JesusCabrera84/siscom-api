@@ -341,8 +341,8 @@ Accept: text/event-stream
 
 #### Query Parameters
 
-| Parámetro    | Tipo   | Requerido | Descripción                                              |
-| ------------ | ------ | --------- | -------------------------------------------------------- |
+| Parámetro    | Tipo   | Requerido | Descripción                                               |
+| ------------ | ------ | --------- | --------------------------------------------------------- |
 | `device_ids` | string | ❌ No     | IDs de dispositivos separados por comas (filtro opcional) |
 
 **Nota:** Si no se especifica `device_ids`, se recibirán eventos de **todos** los dispositivos.
@@ -361,15 +361,17 @@ curl -N 'http://10.8.0.1:8000/api/v1/stream?device_ids=867564050638581,DEVICE123
 
 ```javascript
 // Todos los dispositivos
-const eventSource = new EventSource('http://10.8.0.1:8000/api/v1/stream');
+const eventSource = new EventSource("http://10.8.0.1:8000/api/v1/stream");
 
 // O filtrar por device_ids
-const deviceIds = '867564050638581,DEVICE123';
-const eventSource = new EventSource(`http://10.8.0.1:8000/api/v1/stream?device_ids=${deviceIds}`);
+const deviceIds = "867564050638581,DEVICE123";
+const eventSource = new EventSource(
+  `http://10.8.0.1:8000/api/v1/stream?device_ids=${deviceIds}`,
+);
 
-eventSource.addEventListener('message', (event) => {
+eventSource.addEventListener("message", (event) => {
   const data = JSON.parse(event.data);
-  console.log('Evento MQTT recibido:', data);
+  console.log("Evento MQTT recibido:", data);
   // Estructura completa del mensaje de Mosquitto:
   // {
   //   "data": {
@@ -387,12 +389,12 @@ eventSource.addEventListener('message', (event) => {
   // }
 });
 
-eventSource.addEventListener('ping', (event) => {
-  console.log('Keep-alive recibido');
+eventSource.addEventListener("ping", (event) => {
+  console.log("Keep-alive recibido");
 });
 
 eventSource.onerror = (error) => {
-  console.error('Error en SSE:', error);
+  console.error("Error en SSE:", error);
   eventSource.close();
 };
 ```
@@ -522,7 +524,7 @@ Claridad semántica: "las comunicaciones del dispositivo X"
 
 ```javascript
 // Ejemplo: Obtener todo el historial de un vehículo
-const history = await fetch('/api/v1/devices/867564050638581/communications');
+const history = await fetch("/api/v1/devices/867564050638581/communications");
 ```
 
 ### 📍 Estado Actual (`/communications/latest`)
@@ -536,7 +538,9 @@ const history = await fetch('/api/v1/devices/867564050638581/communications');
 
 ```javascript
 // Ejemplo: Mostrar posición actual de todos los vehículos en un mapa
-const currentPositions = await fetch('/api/v1/communications/latest?device_ids=X&device_ids=Y');
+const currentPositions = await fetch(
+  "/api/v1/communications/latest?device_ids=X&device_ids=Y",
+);
 // Retorna SOLO la última posición de cada uno
 ```
 
@@ -552,8 +556,10 @@ const currentPositions = await fetch('/api/v1/communications/latest?device_ids=X
 
 ```javascript
 // Ejemplo: Seguimiento en tiempo real desde MQTT
-const eventSource = new EventSource('/api/v1/stream?device_ids=867564050638581,DEVICE123');
-eventSource.addEventListener('message', (e) => {
+const eventSource = new EventSource(
+  "/api/v1/stream?device_ids=867564050638581,DEVICE123",
+);
+eventSource.addEventListener("message", (e) => {
   const data = JSON.parse(e.data);
   // Actualiza la UI automáticamente con cada mensaje MQTT
   console.log(data.data.DEVICE_ID, data.data.LATITUD, data.data.LONGITUD);
@@ -562,16 +568,16 @@ eventSource.addEventListener('message', (e) => {
 
 ### 📊 Comparación Rápida
 
-| Característica  | `/communications`          | `/communications/latest`      | `/api/v1/stream` (MQTT)  |
-| --------------- | -------------------------- | ----------------------------- | ------------------------ |
-| Tipo            | Histórico completo         | Snapshot actual               | Tiempo real desde MQTT   |
-| Origen          | `suntech` + `queclink`     | `current_state`               | Mosquitto (MQTT broker)  |
-| Datos           | Todos los registros        | Solo el más reciente          | Stream mensajes MQTT     |
-| Incluye `id`    | ✅ Sí                      | ❌ No (PK: `device_id`)       | ✅ Mensaje completo      |
-| Formato         | REST JSON                  | REST JSON                     | SSE (Server-Sent Events) |
-| Frecuencia      | Bajo demanda               | Bajo demanda                  | Tiempo real              |
-| Rendimiento     | Lento (muchos datos)       | ⚡ Rápido (pocos datos)        | ⚡ Eventos instantáneos   |
-| Uso recomendado | Reportes, análisis         | Dashboards, mapas             | Monitoreo en tiempo real |
+| Característica  | `/communications`      | `/communications/latest` | `/api/v1/stream` (MQTT)  |
+| --------------- | ---------------------- | ------------------------ | ------------------------ |
+| Tipo            | Histórico completo     | Snapshot actual          | Tiempo real desde MQTT   |
+| Origen          | `suntech` + `queclink` | `current_state`          | Mosquitto (MQTT broker)  |
+| Datos           | Todos los registros    | Solo el más reciente     | Stream mensajes MQTT     |
+| Incluye `id`    | ✅ Sí                  | ❌ No (PK: `device_id`)  | ✅ Mensaje completo      |
+| Formato         | REST JSON              | REST JSON                | SSE (Server-Sent Events) |
+| Frecuencia      | Bajo demanda           | Bajo demanda             | Tiempo real              |
+| Rendimiento     | Lento (muchos datos)   | ⚡ Rápido (pocos datos)  | ⚡ Eventos instantáneos  |
+| Uso recomendado | Reportes, análisis     | Dashboards, mapas        | Monitoreo en tiempo real |
 
 ---
 
@@ -660,7 +666,7 @@ Verás:
 
   async function fetchLatestPositions(deviceIds) {
     loading = true;
-    
+
     try {
       const params = new URLSearchParams();
       deviceIds.forEach(id => params.append('device_ids', id));
@@ -687,7 +693,7 @@ Verás:
   onMount(() => {
     // Obtener posición actual de todos los vehículos
     fetchLatestPositions(['867564050638581', 'DEVICE123']);
-    
+
     // Actualizar cada 30 segundos
     const interval = setInterval(() => {
       fetchLatestPositions(['867564050638581', 'DEVICE123']);

@@ -48,7 +48,7 @@
 
 **Environment Variables**:
 
-``` bash
+```bash
 DB_HOST
 DB_PORT
 DB_USERNAME

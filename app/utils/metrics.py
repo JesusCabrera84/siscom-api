@@ -78,7 +78,7 @@ class MetricsClient:
             if not self.client:
                 return
             metric = f"{self.prefix}.latency.{endpoint}"
-            self.client.timer(metric, duration_ms)  # Enviar métrica de timing
+            self.client.timer(metric, int(duration_ms))  # Enviar métrica de timing
         except Exception as e:
             logger.debug(f"Error en métricas (timing): {e}")
 
