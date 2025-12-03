@@ -50,6 +50,6 @@ EXPOSE 8000
 HEALTHCHECK --interval=600s --timeout=10s --start-period=40s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()" || exit 1
 
-# Comando de inicio
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Comando de inicio con HTTP/1.1 para compatibilidad con SSE
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--http", "h11"]
 

@@ -88,10 +88,10 @@ clean: ## Limpiar archivos temporales
 	rm -rf *.egg-info
 
 dev: ## Ejecutar servidor en modo desarrollo
-	uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+	uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 --http h11
 
 run: ## Ejecutar servidor en modo producción
-	uvicorn app.main:app --host 0.0.0.0 --port 8000
+	uvicorn app.main:app --host 0.0.0.0 --port 8000 --http h11
 
 docker-build: ## Construir imagen Docker
 	@echo "🐳 Construyendo imagen Docker..."
