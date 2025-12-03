@@ -39,7 +39,9 @@ class MQTTClient:
                 5: "No autorizado",
             }
             error_msg = error_messages.get(rc, f"Error desconocido: {rc}")
-            logger.error(f"Error al conectar al broker MQTT. Código: {rc} - {error_msg}")
+            logger.error(
+                f"Error al conectar al broker MQTT. Código: {rc} - {error_msg}"
+            )
 
     def _on_disconnect(self, _client, _userdata, rc):
         """Callback cuando se desconecta del broker MQTT."""
@@ -124,7 +126,9 @@ class MQTTClient:
 
             # Conectar al broker
             if self.client:
-                logger.info(f"Conectando al broker MQTT en {host}:{port} con client_id: {unique_client_id}")
+                logger.info(
+                    f"Conectando al broker MQTT en {host}:{port} con client_id: {unique_client_id}"
+                )
                 # Aumentar keepalive a 120 segundos para conexiones más estables
                 self.client.connect(host, port, keepalive=120)
 

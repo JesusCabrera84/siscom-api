@@ -15,6 +15,9 @@ psycopg[binary]
 python-jose[cryptography]
 passlib[bcrypt]
 
+# --- Seguridad PASETO ---
+pyseto
+
 # --- Server-Sent Events ---
 sse-starlette
 

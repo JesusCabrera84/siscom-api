@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
-from app.api.routes import communications, stream
+from app.api.routes import communications, public, stream
 from app.core.config import settings
 from app.core.database import engine
 from app.core.middleware import MetricsMiddleware
@@ -92,3 +92,6 @@ async def health_check():
 # Incluir routers API v1
 app.include_router(communications.router)
 app.include_router(stream.router)
+
+# Incluir routers públicos
+app.include_router(public.router)

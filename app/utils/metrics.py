@@ -30,7 +30,9 @@ class MetricsClient:
                     port=settings.STATSD_PORT,
                 )
                 await self.client.connect()
-                logger.info(f"✓ Cliente StatsD conectado a {settings.STATSD_HOST}:{settings.STATSD_PORT}")
+                logger.info(
+                    f"✓ Cliente StatsD conectado a {settings.STATSD_HOST}:{settings.STATSD_PORT}"
+                )
             except Exception as e:
                 logger.warning(f"No se pudo conectar a StatsD: {e}")
                 self._enabled = False  # Deshabilitar para evitar reintentos constantes
@@ -104,7 +106,9 @@ class MetricsClient:
     async def decrement_active_connections(self):
         """Decrementa conexiones SSE activas (GAUGE - valor actual)."""
         if not self._enabled:
-            self._active_connections = max(0, self._active_connections - 1)  # Mantener el contador interno
+            self._active_connections = max(
+                0, self._active_connections - 1
+            )  # Mantener el contador interno
             return  # StatsD deshabilitado
 
         try:
