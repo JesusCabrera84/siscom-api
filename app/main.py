@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from app.api.routes import communications, public, stream
+from app.api.routes.stream import start_mqtt_broker_bridge
 from app.core.config import settings
 from app.core.database import engine
 from app.core.middleware import MetricsMiddleware
@@ -43,6 +44,13 @@ async def lifespan(_app: FastAPI):
         logging.info("Cliente MQTT inicializado")
     except Exception as e:
         logging.error(f"Error al inicializar cliente MQTT: {e}")
+
+    # Startup: Iniciar bridge MQTT → WebSocket Broker (alta performance)
+    try:
+        start_mqtt_broker_bridge()
+        logging.info("✅ Bridge MQTT → WebSocket activo")
+    except Exception as e:
+        logging.error(f"Error al iniciar MQTT bridge: {e}")
 
     yield
 

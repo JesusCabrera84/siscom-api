@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Client - siscom-api</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 30px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-connect {
+            background: #4caf50;
+            color: white;
+        }
+
+        .btn-disconnect {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-clear {
+            background: #ff9800;
+            color: white;
+        }
+
+        .btn-stats {
+            background: #2196f3;
+            color: white;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-disconnected {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .status-connected {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .status-connecting {
+            background: #fff3e0;
+            color: #e65100;
+        }
+
+        .indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .messages {
+            background: #fafafa;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+
+        .message {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            border-left: 4px solid #ccc;
+        }
+
+        .message-data {
+            background: #e3f2fd;
+            border-left-color: #2196f3;
+        }
+
+        .message-ping {
+            background: #f3e5f5;
+            border-left-color: #9c27b0;
+        }
+
+        .message-error {
+            background: #ffebee;
+            border-left-color: #f44336;
+        }
+
+        .message-info {
+            background: #e8f5e9;
+            border-left-color: #4caf50;
+        }
+
+        .timestamp {
+            color: #666;
+            font-size: 11px;
+            margin-bottom: 5px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 WebSocket Client - siscom-api</h1>
+        <p class="subtitle">Cliente de prueba para el endpoint de streaming en tiempo real</p>
+
+        <div class="controls">
+            <input
+                type="text"
+                id="host"
+                placeholder="Host (ej: localhost:8000)"
+                value="localhost:8000"
+            />
+            <input
+                type="text"
+                id="deviceIds"
+                placeholder="Device IDs separados por comas (ej: 0848086072,0848086073)"
+            />
+            <button class="btn-connect" id="btnConnect">🔌 Conectar</button>
+            <button class="btn-disconnect" id="btnDisconnect" disabled>🔌 Desconectar</button>
+            <button class="btn-clear" id="btnClear">🗑️ Limpiar</button>
+            <button class="btn-stats" id="btnStats">📊 Estadísticas</button>
+        </div>
+
+        <div id="status" class="status status-disconnected">
+            <span class="indicator" style="background: #f44336;"></span>
+            <span>Desconectado</span>
+        </div>
+
+        <div class="stats" id="stats" style="display: none;">
+            <div class="stat-card">
+                <div class="stat-value" id="statMessages">0</div>
+                <div class="stat-label">Mensajes Recibidos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statKeepalive">0</div>
+                <div class="stat-label">Keep-alives</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statUptime">0s</div>
+                <div class="stat-label">Tiempo Conectado</div>
+            </div>
+        </div>
+
+        <div class="messages" id="messages">
+            <div class="message message-info">
+                <div class="timestamp">Listo para conectar</div>
+                <div>Ingresa los device_ids y presiona "Conectar" para iniciar el streaming.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let messageCount = 0;
+        let keepaliveCount = 0;
+        let connectTime = null;
+        let uptimeInterval = null;
+
+        const elements = {
+            host: document.getElementById('host'),
+            deviceIds: document.getElementById('deviceIds'),
+            btnConnect: document.getElementById('btnConnect'),
+            btnDisconnect: document.getElementById('btnDisconnect'),
+            btnClear: document.getElementById('btnClear'),
+            btnStats: document.getElementById('btnStats'),
+            status: document.getElementById('status'),
+            messages: document.getElementById('messages'),
+            stats: document.getElementById('stats'),
+            statMessages: document.getElementById('statMessages'),
+            statKeepalive: document.getElementById('statKeepalive'),
+            statUptime: document.getElementById('statUptime'),
+        };
+
+        function updateStatus(status, color) {
+            const indicator = elements.status.querySelector('.indicator');
+            const text = elements.status.querySelector('span:last-child');
+
+            elements.status.className = `status status-${status}`;
+            indicator.style.background = color;
+            text.textContent = status === 'connected' ? 'Conectado' :
+                              status === 'connecting' ? 'Conectando...' : 'Desconectado';
+        }
+
+        function addMessage(type, content) {
+            const timestamp = new Date().toLocaleTimeString();
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message message-${type}`;
+            messageDiv.innerHTML = `
+                <div class="timestamp">${timestamp}</div>
+                <div>${content}</div>
+            `;
+            elements.messages.appendChild(messageDiv);
+            elements.messages.scrollTop = elements.messages.scrollHeight;
+        }
+
+        function updateStats() {
+            elements.statMessages.textContent = messageCount;
+            elements.statKeepalive.textContent = keepaliveCount;
+
+            if (connectTime) {
+                const uptime = Math.floor((Date.now() - connectTime) / 1000);
+                elements.statUptime.textContent = `${uptime}s`;
+            }
+        }
+
+        function connect() {
+            const host = elements.host.value.trim();
+            const deviceIds = elements.deviceIds.value.trim();
+
+            if (!deviceIds) {
+                alert('❌ Debe especificar al menos un device_id');
+                return;
+            }
+
+            const url = `ws://${host}/api/v1/stream?device_ids=${deviceIds}`;
+            addMessage('info', `🔌 Conectando a: ${url}`);
+            updateStatus('connecting', '#ff9800');
+
+            ws = new WebSocket(url);
+
+            ws.onopen = () => {
+                addMessage('info', '✅ WebSocket conectado exitosamente');
+                updateStatus('connected', '#4caf50');
+                elements.btnConnect.disabled = true;
+                elements.btnDisconnect.disabled = false;
+                elements.host.disabled = true;
+                elements.deviceIds.disabled = true;
+                elements.stats.style.display = 'grid';
+
+                messageCount = 0;
+                keepaliveCount = 0;
+                connectTime = Date.now();
+
+                uptimeInterval = setInterval(updateStats, 1000);
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    const eventType = message.event;
+
+                    if (eventType === 'message') {
+                        messageCount++;
+                        const deviceData = message.data.data || {};
+                        const deviceId = deviceData.DEVICE_ID || 'N/A';
+                        const timestamp = message.data.timestamp || 'N/A';
+
+                        let content = `<strong>📦 Mensaje de ${deviceId}</strong><br>`;
+                        content += `Timestamp: ${timestamp}<br>`;
+
+                        const fields = ['LAT', 'LON', 'SPEED', 'ALTITUDE', 'HEADING'];
+                        fields.forEach(field => {
+                            if (deviceData[field] !== undefined) {
+                                content += `${field}: ${deviceData[field]}<br>`;
+                            }
+                        });
+
+                        addMessage('data', content);
+                        updateStats();
+
+                    } else if (eventType === 'ping') {
+                        keepaliveCount++;
+                        addMessage('ping', '💓 Keep-alive recibido');
+                        updateStats();
+
+                    } else if (eventType === 'error') {
+                        const errorMsg = message.data.message || 'Error desconocido';
+                        addMessage('error', `❌ Error del servidor: ${errorMsg}`);
+                    }
+                } catch (e) {
+                    addMessage('error', `❌ Error al parsear mensaje: ${e.message}`);
+                }
+            };
+
+            ws.onerror = (error) => {
+                addMessage('error', `❌ Error de WebSocket: ${error.message || 'Unknown'}`);
+            };
+
+            ws.onclose = (event) => {
+                addMessage('info', `🔌 WebSocket cerrado (código: ${event.code})`);
+                updateStatus('disconnected', '#f44336');
+                elements.btnConnect.disabled = false;
+                elements.btnDisconnect.disabled = true;
+                elements.host.disabled = false;
+                elements.deviceIds.disabled = false;
+
+                if (uptimeInterval) {
+                    clearInterval(uptimeInterval);
+                    uptimeInterval = null;
+                }
+            };
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+
+        function clearMessages() {
+            elements.messages.innerHTML = '';
+            addMessage('info', 'Mensajes limpiados');
+        }
+
+        async function fetchStats() {
+            const host = elements.host.value.trim();
+            try {
+                const response = await fetch(`http://${host}/api/v1/stream/stats`);
+                const stats = await response.json();
+
+                let content = '<strong>📊 Estadísticas del Broker</strong><br>';
+                content += `Mensajes procesados: ${stats.total_messages_processed}<br>`;
+                content += `Subscribers activos: ${stats.active_subscribers}<br>`;
+                content += `Devices monitoreados: ${stats.devices_being_monitored}`;
+
+                addMessage('info', content);
+            } catch (e) {
+                addMessage('error', `❌ Error al obtener estadísticas: ${e.message}`);
+            }
+        }
+
+        elements.btnConnect.addEventListener('click', connect);
+        elements.btnDisconnect.addEventListener('click', disconnect);
+        elements.btnClear.addEventListener('click', clearMessages);
+        elements.btnStats.addEventListener('click', fetchStats);
+
+        // Permitir conectar con Enter
+        elements.deviceIds.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !elements.btnConnect.disabled) {
+                connect();
+            }
+        });
+    </script>
+</body>
+</html>
+
