@@ -18,9 +18,6 @@ passlib[bcrypt]
 # --- Seguridad PASETO ---
 pyseto
 
-# --- Server-Sent Events ---
-sse-starlette
-
 # --- MQTT Client ---
 paho-mqtt
 

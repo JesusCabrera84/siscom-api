@@ -1,70 +1,62 @@
-# 🚀 Migración SSE → WebSocket de Alta Performance
+# 🚀 WebSocket Streaming API - Alta Performance
 
-## 📋 Resumen de Cambios
+## 📋 Resumen
 
-Se ha implementado una arquitectura WebSocket de alta performance para reemplazar Server-Sent Events (SSE), diseñada para escalar eficientemente a decenas o cientos de conexiones simultáneas.
+Sistema de streaming WebSocket de **alta performance**, diseñado para escalar a **decenas o cientos de conexiones simultáneas**.
 
-### ✅ Ventajas sobre SSE
+### ✅ Características Principales
 
-1. **Sin problemas de buffering**: Los ALB de AWS y nginx no interferirán con WebSocket
-2. **Full-duplex**: Comunicación bidireccional (aunque actualmente solo servidor → cliente)
-3. **Menor overhead**: Protocolo más eficiente que HTTP/1.1 SSE
-4. **Mejor soporte móvil**: Especialmente en React Native y apps nativas
-5. **Backpressure natural**: Control de flujo automático cuando un cliente es lento
-6. **Escalabilidad**: Un único consumer MQTT para todas las conexiones
+- **Alta escalabilidad**: Un único consumer MQTT para todas las conexiones
+- **Full-duplex**: Comunicación bidireccional (WebSocket)
+- **Backpressure automático**: Control de flujo cuando clientes son lentos
+- **Sin buffering**: Sin problemas con ALB/nginx
+- **Filtrado eficiente**: Por device_ids
+- **Monitoreo en tiempo real**: Estadísticas del broker
 
 ---
 
-## 🏗️ Arquitectura Implementada
-
-### Componentes
+## 🏗️ Arquitectura
 
 ```
-┌─────────────────┐
-│   MQTT Broker   │
-│   (Mosquitto)   │
-└────────┬────────┘
-         │
-         │ paho-mqtt
-         │
-    ┌────▼────────────────────┐
-    │   MQTTClient            │
-    │   (mqtt_client.py)      │
-    │   - Callbacks system    │
-    └────┬────────────────────┘
-         │
-         │ callback
-         │
-    ┌────▼─────────────────────┐
-    │   WebSocketBroker        │
-    │   (stream.py)            │
-    │   - Pub/Sub interno      │
-    │   - asyncio.Queue        │
-    └────┬─────────────────────┘
-         │
-         │ distribuye mensajes
-         │
-    ┌────▼─────────────┐    ┌─────────────────┐    ┌─────────────────┐
-    │  WebSocket #1    │    │  WebSocket #2   │    │  WebSocket #N   │
-    │  device_ids:     │    │  device_ids:    │    │  device_ids:    │
-    │  [A, B]          │    │  [C]            │    │  [A]            │
-    └──────────────────┘    └─────────────────┘    └─────────────────┘
+                    ┌─────────────────────┐
+                    │   MQTT Broker       │
+                    │   (Mosquitto)       │
+                    └──────────┬──────────┘
+                               │
+                               │ paho-mqtt
+                               │
+                    ┌──────────▼──────────────┐
+                    │   MQTTClient            │
+                    │   ✅ 1 consumer único   │
+                    │   ✅ Callbacks system   │
+                    └──────────┬──────────────┘
+                               │
+                        callback/publish
+                               │
+                    ┌──────────▼──────────────┐
+                    │   WebSocketBroker       │
+                    │   ✅ Pub/Sub interno    │
+                    │   ✅ asyncio.Queue      │
+                    │   ✅ Filtro device_id   │
+                    └──────────┬──────────────┘
+                               │
+         ┌─────────────────────┼─────────────────────┐
+         │                     │                     │
+    ┌────▼────┐           ┌────▼────┐          ┌────▼────┐
+    │   WS 1  │           │   WS 2  │          │   WS N  │
+    │ dev: A,B│           │ dev: C  │          │ dev: A  │
+    └─────────┘           └─────────┘          └─────────┘
 ```
 
 ### Flujo de Mensajes
 
-1. **MQTT** recibe un mensaje del broker Mosquitto
-2. **mqtt_client** decodifica JSON y ejecuta callbacks registrados
-3. **mqtt_message_handler** recibe el mensaje vía callback
-4. **WebSocketBroker** distribuye el mensaje solo a las colas suscritas al `DEVICE_ID`
-5. **WebSocket connections** reciben el mensaje de su cola y lo envían al cliente
+1. **MQTT** recibe mensaje → decodifica JSON
+2. **mqtt_client** ejecuta callbacks registrados (thread-safe)
+3. **mqtt_message_handler** recibe mensaje vía callback
+4. **WebSocketBroker** distribuye solo a colas con ese device_id
+5. **WebSocket connections** reciben y envían al cliente
 
-### Clave de Performance
-
-- ✅ **Un solo consumer MQTT** para todas las conexiones
-- ✅ **No duplicación de trabajo** en decodificación/parseo
-- ✅ **Distribución en memoria** ultra rápida con `asyncio.Queue`
-- ✅ **Filtrado eficiente** por device_id antes de enviar
+**Clave de Performance:** Sin duplicación de trabajo, distribución en memoria ultra rápida.
 
 ---
 
@@ -117,9 +109,6 @@ ws.onerror = (error) => {
 ws.onclose = (event) => {
   console.log('🔌 WebSocket cerrado:', event.code, event.reason);
 };
-
-// Cerrar conexión manualmente
-// ws.close();
 ```
 
 ### Ejemplo en Python (websockets library)
@@ -308,34 +297,6 @@ Si un cliente WebSocket es muy lento y su cola se llena:
 
 ---
 
-## 🛠️ Archivos Modificados
-
-### 1. `app/api/routes/stream.py`
-
-**Cambios principales:**
-- ✅ Clase `WebSocketBroker` para pub/sub interno
-- ✅ Endpoint WebSocket `@router.websocket("/stream")`
-- ✅ Handler `mqtt_message_handler` para recibir mensajes MQTT
-- ✅ Función `start_mqtt_broker_bridge()` para inicializar el puente
-- ✅ Endpoint de estadísticas `GET /stream/stats`
-- ⚠️ SSE endpoint mantenido como legacy (puede removerse después)
-
-### 2. `app/services/mqtt_client.py`
-
-**Cambios principales:**
-- ✅ Sistema de callbacks: `_message_callbacks`
-- ✅ Método `register_message_callback()` para suscribir callbacks
-- ✅ Método `unregister_message_callback()` para desuscribir
-- ✅ Modificación en `_on_message()` para ejecutar callbacks
-
-### 3. `app/main.py`
-
-**Cambios principales:**
-- ✅ Import de `start_mqtt_broker_bridge`
-- ✅ Inicialización del bridge en el startup del `lifespan`
-
----
-
 ## 🧪 Testing del WebSocket
 
 ### Usando websocat (CLI)
@@ -349,80 +310,41 @@ sudo apt install websocat  # Ubuntu
 websocat "ws://localhost:8000/api/v1/stream?device_ids=0848086072"
 ```
 
-### Usando curl + websocat
-
-```bash
-curl -i -N \
-  -H "Connection: Upgrade" \
-  -H "Upgrade: websocket" \
-  -H "Sec-WebSocket-Version: 13" \
-  -H "Sec-WebSocket-Key: $(openssl rand -base64 16)" \
-  http://localhost:8000/api/v1/stream?device_ids=0848086072
-```
-
 ### Usando Postman
 
 1. Crear nueva request → WebSocket
 2. URL: `ws://localhost:8000/api/v1/stream?device_ids=0848086072`
 3. Conectar y observar mensajes entrantes
 
----
-
-## 🚦 Migración desde SSE
-
-### SSE (Antiguo)
-
-```javascript
-const eventSource = new EventSource(
-  'http://localhost:8000/api/v1/stream?device_ids=0848086072'
-);
-
-eventSource.addEventListener('message', (event) => {
-  const data = JSON.parse(event.data);
-  console.log(data);
-});
-```
-
-### WebSocket (Nuevo)
-
-```javascript
-const ws = new WebSocket(
-  'ws://localhost:8000/api/v1/stream?device_ids=0848086072'
-);
-
-ws.onmessage = (event) => {
-  const message = JSON.parse(event.data);
-  if (message.event === 'message') {
-    console.log(message.data);
-  }
-};
-```
-
-### Diferencias Clave
-
-| Aspecto              | SSE                          | WebSocket                    |
-|---------------------|------------------------------|------------------------------|
-| Protocolo           | HTTP/1.1 (unidireccional)    | WS (bidireccional)           |
-| Buffering en ALB    | ❌ Problemático              | ✅ Sin problemas             |
-| Overhead            | Alto (HTTP headers)          | Bajo (frames pequeños)       |
-| Reconexión auto     | ✅ Nativa en EventSource     | ⚠️ Manual en WebSocket       |
-| Formato de mensaje  | `event` + `data` separados   | JSON con `{"event": "..."}`  |
-
----
-
-## 📝 Retrocompatibilidad
-
-El endpoint SSE **se mantiene funcionando** en `/api/v1/stream` (GET):
+### Usando el cliente de ejemplo Python
 
 ```bash
-# SSE sigue funcionando (legacy)
-curl -N http://localhost:8000/api/v1/stream?device_ids=0848086072
+python examples/websocket_client_example.py --device-ids 0848086072
 ```
 
-Esto permite una **migración gradual** de clientes:
-1. Nuevos clientes → usar WebSocket
-2. Clientes existentes → seguir usando SSE
-3. Eventualmente deprecar y remover SSE
+### Usando el cliente de ejemplo HTML
+
+```bash
+open examples/websocket_client_example.html
+```
+
+---
+
+## 🎯 Performance Esperado
+
+### Benchmarks Aproximados
+
+| Métrica                     | Valor Esperado          |
+|-----------------------------|-------------------------|
+| Latencia mensaje → cliente  | < 10ms                  |
+| Conexiones simultáneas      | 100+ sin degradación    |
+| Mensajes/segundo (total)    | 1000+ sin problema      |
+| Memory overhead por WS      | ~1-2 MB                 |
+
+### Escalabilidad
+
+- **Vertical:** Un solo servidor puede manejar 100-500 WebSockets fácilmente
+- **Horizontal:** Para > 500 conexiones, usar Redis Pub/Sub para compartir mensajes entre instancias
 
 ---
 
@@ -446,7 +368,7 @@ ws://localhost:8000/api/v1/stream?device_ids=0848086072
 1. **Verificar que MQTT esté conectado:**
    ```bash
    # Ver logs de la aplicación
-   # Debe aparecer: "✅ MQTT → WebSocket Broker bridge iniciado"
+   # Debe aparecer: "✅ Bridge MQTT → WebSocket activo"
    ```
 
 2. **Verificar estadísticas del broker:**
@@ -474,21 +396,82 @@ Cola llena para device_id X. Aplicando backpressure
 
 ---
 
-## 🎯 Performance Esperado
+## 🔗 Endpoint Público (Share Location)
 
-### Benchmarks Aproximados
+Además del endpoint principal, existe un **endpoint público** para compartir ubicaciones con usuarios externos usando tokens PASETO temporales.
 
-| Métrica                     | Valor Esperado          |
-|-----------------------------|-------------------------|
-| Latencia mensaje → cliente  | < 10ms                  |
-| Conexiones simultáneas      | 100+ sin degradación    |
-| Mensajes/segundo (total)    | 1000+ sin problema      |
-| Memory overhead por WS      | ~1-2 MB                 |
+### URL
 
-### Escalabilidad
+```
+ws://localhost:8000/api/v1/public/share-location/stream?token=v4.local.xxx...
+```
 
-- **Vertical:** Un solo servidor puede manejar 100-500 WebSockets fácilmente
-- **Horizontal:** Para > 500 conexiones, usar Redis Pub/Sub para compartir mensajes entre instancias
+### Diferencias con el Endpoint Principal
+
+| Característica | `/api/v1/stream` | `/api/v1/public/share-location/stream` |
+|----------------|------------------|----------------------------------------|
+| Autenticación  | No requerida     | Token PASETO obligatorio               |
+| Device IDs     | Especificados en query params | Automático desde el token      |
+| Expiración     | Sin límite       | Según expiración del token PASETO      |
+| Uso típico     | Apps internas    | Links compartidos a usuarios externos  |
+
+### Flujo de Uso
+
+1. **Obtener token PASETO** vía el endpoint `/api/v1/public/share-location/init`
+2. **Conectar WebSocket** con el token en query params
+3. **Recibir ubicaciones** del device_id asociado al token
+4. **El token expira** → El servidor envía evento `expired` y cierra la conexión
+
+### Eventos Especiales
+
+```json
+// Token expirado durante la conexión
+{
+  "event": "expired",
+  "data": {
+    "message": "Token expired"
+  }
+}
+```
+
+### Códigos de Cierre WebSocket
+
+| Código | Razón | Descripción |
+|--------|-------|-------------|
+| 1008   | Policy Violation | Token inválido o expirado antes de conectar |
+| 1000   | Normal Closure | Token expiró durante la conexión |
+
+### Ejemplo JavaScript
+
+```javascript
+const token = 'v4.local.xxx...'; // Token obtenido de /init
+const ws = new WebSocket(
+  `ws://localhost:8000/api/v1/public/share-location/stream?token=${token}`
+);
+
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  
+  switch (data.event) {
+    case 'message':
+      console.log('📍 Nueva ubicación:', data.data);
+      break;
+    case 'expired':
+      console.log('⏰ Token expirado, solicitar nuevo token');
+      ws.close();
+      break;
+    case 'ping':
+      console.log('💓 Keep-alive');
+      break;
+  }
+};
+
+ws.onclose = (event) => {
+  if (event.code === 1008) {
+    console.log('🚫 Token inválido o expirado');
+  }
+};
+```
 
 ---
 
@@ -500,18 +483,25 @@ Cola llena para device_id X. Aplicando backpressure
 
 ---
 
-## ✅ Checklist de Implementación
+## 📂 Estructura de Archivos
 
-- [x] Crear clase `WebSocketBroker` con pub/sub interno
-- [x] Implementar sistema de callbacks en `MQTTClient`
-- [x] Crear endpoint WebSocket `/stream`
-- [x] Inicializar bridge MQTT → Broker en startup
-- [x] Agregar endpoint de estadísticas `/stream/stats`
-- [x] Implementar backpressure automático
-- [x] Mantener SSE como legacy para retrocompatibilidad
-- [x] Documentar uso y migración
+```
+app/
+├── api/
+│   └── routes/
+│       ├── stream.py          # WebSocket endpoint principal + broker
+│       └── public.py          # WebSocket endpoint público (share-location)
+├── services/
+│   └── mqtt_client.py         # Cliente MQTT con callbacks
+└── main.py                    # Inicialización del bridge
+
+examples/
+├── websocket_client_example.py    # Cliente Python CLI
+├── websocket_client_example.html  # Cliente web interactivo
+└── README.md                      # Guía de ejemplos
+```
 
 ---
 
-**¿Preguntas?** Contactar al equipo de desarrollo.
+**Desarrollado con ❤️ para alto rendimiento y escalabilidad.**
 

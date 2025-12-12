@@ -6,15 +6,14 @@ pero usan tokens PASETO para autorización temporal.
 """
 
 import asyncio
-import json
 import logging
+from contextlib import suppress
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, HTTPException, Query, Request
-from sse_starlette.sse import EventSourceResponse
+from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconnect
 
+from app.api.routes.stream import ws_broker
 from app.core.database import SessionLocal
-from app.services.mqtt_client import mqtt_client
 from app.services.repository import get_latest_communications
 from app.utils.paseto_validator import ExpiredToken, InvalidToken, paseto_validator
 
@@ -175,132 +174,227 @@ async def init_share_location(
         raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
-@router.get("/stream")
-async def stream_shared_location(
-    request: Request,
+# ============================================================================
+# Funciones auxiliares para WebSocket público
+# ============================================================================
+
+
+async def _validate_share_token(
+    websocket: WebSocket, token: str
+) -> tuple[str, datetime] | None:
+    """
+    Valida el token PASETO y retorna (device_id, expires_at) o None si es inválido.
+
+    Si el token es inválido, cierra el WebSocket automáticamente con código 1008.
+
+    Args:
+        websocket: Conexión WebSocket
+        token: Token PASETO v4.local a validar
+
+    Returns:
+        Tupla (device_id, expires_at) si es válido, None si es inválido
+    """
+    try:
+        payload = paseto_validator.validate(token)
+    except ExpiredToken:
+        logger.warning("Intento de WebSocket público con token expirado")
+        await websocket.close(code=1008, reason="Token expired")
+        return None
+    except InvalidToken as e:
+        logger.warning(f"Intento de WebSocket público con token inválido: {str(e)}")
+        await websocket.close(code=1008, reason="Invalid token")
+        return None
+
+    device_id = payload.get("device_id")
+    if not device_id:
+        await websocket.close(code=1008, reason="Invalid token: missing device_id")
+        return None
+
+    expires_at_str = payload.get("exp")
+    if not expires_at_str:
+        await websocket.close(code=1008, reason="Invalid token: missing exp")
+        return None
+
+    return device_id, datetime.fromisoformat(expires_at_str)
+
+
+async def _send_keepalive(websocket: WebSocket, expires_at: datetime) -> bool:
+    """
+    Envía keep-alive y verifica expiración del token.
+
+    Args:
+        websocket: Conexión WebSocket
+        expires_at: Fecha de expiración del token
+
+    Returns:
+        True si el token expiró, False si debe continuar
+    """
+    await asyncio.sleep(60)
+
+    if datetime.now(UTC) >= expires_at:
+        await websocket.send_json(
+            {"event": "expired", "data": {"message": "Token expired"}}
+        )
+        await websocket.close(code=1000, reason="Token expired")
+        return True
+
+    await websocket.send_json({"event": "ping", "data": {"type": "keep-alive"}})
+    return False
+
+
+async def _process_queue_messages(
+    websocket: WebSocket,
+    queues: list[asyncio.Queue],
+    expires_at: datetime,
+    device_id: str,
+) -> bool:
+    """
+    Procesa mensajes de las colas del broker.
+
+    Args:
+        websocket: Conexión WebSocket
+        queues: Colas suscritas al broker
+        expires_at: Fecha de expiración del token
+        device_id: ID del dispositivo (para logging)
+
+    Returns:
+        True si debe terminar el loop, False si debe continuar
+    """
+    if not queues:
+        await asyncio.sleep(1)
+        return False
+
+    done, pending = await asyncio.wait(
+        [asyncio.create_task(q.get()) for q in queues],
+        timeout=60.0,
+        return_when=asyncio.FIRST_COMPLETED,
+    )
+
+    for task in pending:
+        task.cancel()
+
+    # Timeout sin mensajes → verificar expiración
+    if not done:
+        if datetime.now(UTC) >= expires_at:
+            logger.info(f"Token expirado durante WebSocket público: {device_id}")
+            await websocket.send_json(
+                {"event": "expired", "data": {"message": "Token expired"}}
+            )
+            return True
+        return False
+
+    # Procesar mensajes recibidos
+    for task in done:
+        try:
+            event = task.result()
+            await websocket.send_json({"event": "message", "data": event})
+            logger.debug(
+                f"Mensaje WebSocket público enviado: "
+                f"{event.get('data', {}).get('DEVICE_ID')}"
+            )
+        except Exception as e:
+            logger.error(f"Error al procesar mensaje de cola: {e}")
+
+    return False
+
+
+# ============================================================================
+# Endpoint WebSocket público
+# ============================================================================
+
+
+@router.websocket("/stream")
+async def websocket_shared_location(
+    websocket: WebSocket,
     token: str = Query(..., description="Token PASETO para validar acceso"),
 ):
     """
-    Stream SSE con la ubicación en tiempo real para un link compartido.
+    WebSocket para recibir ubicación en tiempo real de un link compartido.
 
-    Este endpoint establece una conexión de Server-Sent Events (SSE) que envía
-    actualizaciones de ubicación en tiempo real desde MQTT para un dispositivo específico.
-    El token se valida periódicamente durante el stream.
+    Este endpoint establece una conexión WebSocket que envía actualizaciones
+    de ubicación en tiempo real para un dispositivo específico, autenticado
+    mediante un token PASETO temporal.
+
+    **Ventajas sobre SSE:**
+    - ✅ Full-duplex (bidireccional)
+    - ✅ Sin problemas de buffering en ALB/nginx
+    - ✅ Menor overhead de red
+    - ✅ Mejor soporte en móviles
+    - ✅ Backpressure natural
 
     **Query Parameters:**
     - `token`: Token PASETO v4.local (requerido)
 
-    **Ejemplo:**
+    **Ejemplo de conexión:**
     ```
-    GET /api/v1/public/share-location/stream?token=v4.local.xxx...
+    ws://localhost:8000/api/v1/public/share-location/stream?token=v4.local.xxx...
     ```
 
-    **Eventos SSE:**
-    - `message`: Datos de ubicación en tiempo real desde MQTT
-    - `event: ping`: Heartbeat para mantener la conexión viva
-    - `event: expired`: El token ha expirado, se cierra la conexión
+    **Protocolo de mensajes:**
+    - Servidor envía mensajes JSON cuando hay eventos de ubicación
+    - Formato: `{"event": "message", "data": {...}}`
+    - Keep-alive automático cada 60 segundos: `{"event": "ping", "data": {"type": "keep-alive"}}`
+    - Token expirado: `{"event": "expired", "data": {"message": "Token expired"}}`
 
-    **Returns:**
-    - EventSourceResponse con eventos SSE de ubicación en tiempo real
+    **Códigos de cierre WebSocket:**
+    - 1008 (Policy Violation): Token inválido o expirado antes de conectar
+    - 1000 (Normal): Token expiró durante la conexión
+
+    **Ejemplo de uso en JavaScript:**
+    ```javascript
+    const token = 'v4.local.xxx...';
+    const ws = new WebSocket(`ws://localhost:8000/api/v1/public/share-location/stream?token=${token}`);
+
+    ws.onopen = () => console.log('Conectado');
+
+    ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.event === 'message') {
+            console.log('Ubicación:', data.data);
+        } else if (data.event === 'expired') {
+            console.log('Token expirado, reconectar con nuevo token');
+        } else if (data.event === 'ping') {
+            console.log('Keep-alive recibido');
+        }
+    };
+
+    ws.onclose = (event) => {
+        console.log('Desconectado:', event.code, event.reason);
+    };
+    ```
     """
-    # 1. Validar token inicialmente
-    try:
-        payload = paseto_validator.validate(token)
-    except ExpiredToken:
-        logger.warning("Intento de stream con token expirado")
-        raise HTTPException(status_code=401, detail="Token expired") from None
-    except InvalidToken as e:
-        logger.warning(f"Intento de stream con token inválido: {str(e)}")
-        raise HTTPException(status_code=403, detail="Invalid token") from None
+    # 1. Validar token ANTES de aceptar la conexión
+    result = await _validate_share_token(websocket, token)
+    if result is None:
+        return
+    device_id, expires_at = result
 
-    device_id = payload.get("device_id")
-
-    if not device_id:
-        raise HTTPException(status_code=403, detail="Invalid token: missing device_id")
-
-    expires_at_str = payload.get("exp")
-    if not expires_at_str:
-        raise HTTPException(status_code=403, detail="Invalid token: missing exp")
-
-    expires_at = datetime.fromisoformat(expires_at_str)
-
+    # 2. Aceptar conexión WebSocket
+    await websocket.accept()
     logger.info(
-        f"Iniciando stream público para device_id: {device_id}, expira: {expires_at}"
+        f"WebSocket público conectado. Device: {device_id}, Expira: {expires_at}"
     )
 
-    # 2. Crear generador SSE
-    async def event_generator():
-        try:
-            while True:
-                # a) Verificar si el cliente se ha desconectado
-                if await request.is_disconnected():
-                    logger.info(f"Cliente desconectado del stream público: {device_id}")
-                    break
+    # 3. Suscribirse al broker para este device_id
+    device_list = [device_id]
+    queues = await ws_broker.subscribe(device_list)
 
-                # b) Validar expiración del token en cada ciclo
-                now = datetime.now(UTC)
-                if now >= expires_at:
-                    logger.info(f"Token expirado durante stream público: {device_id}")
-                    yield {
-                        "event": "expired",
-                        "data": json.dumps({"message": "Token expired"}),
-                    }
-                    break
+    # 4. Task para keep-alive con verificación de expiración
+    keepalive_task = asyncio.create_task(_send_keepalive(websocket, expires_at))
 
-                # c) Verificar conexión MQTT
-                if not mqtt_client.is_connected():
-                    logger.warning("Cliente MQTT no conectado. Esperando reconexión...")
-                    await asyncio.sleep(1)
-                    continue
-
-                try:
-                    # d) Esperar mensaje de MQTT con timeout
-                    event = await asyncio.wait_for(
-                        mqtt_client.get_message(), timeout=60.0
-                    )
-
-                    # e) Filtrar por device_id
-                    message_device_id = event.get("data", {}).get("DEVICE_ID")
-
-                    if not message_device_id or message_device_id != device_id:
-                        # Mensaje no coincide con el filtro, continuar
-                        continue
-
-                    # f) Enviar evento al cliente
-                    logger.debug(f"Enviando evento SSE público: {event}")
-                    yield {
-                        "event": "message",
-                        "data": json.dumps(event),
-                    }
-
-                except TimeoutError:
-                    # g) Enviar keep-alive cada 60 segundos
-                    logger.debug("Enviando keep-alive SSE público")
-                    yield {
-                        "event": "ping",
-                        "data": json.dumps({"type": "keep-alive"}),
-                    }
-
-                except Exception as e:
-                    logger.error(
-                        f"Error al procesar mensaje MQTT en stream público: {e}"
-                    )
-                    await asyncio.sleep(1)
-
-        except Exception as e:
-            logger.error(f"Error en generador SSE público: {e}")
-            yield {
-                "event": "error",
-                "data": json.dumps({"message": "Stream error"}),
-            }
-
-    # 3. Retornar con headers específicos para SSE en HTTP/2
-    return EventSourceResponse(
-        event_generator(),
-        headers={
-            "Cache-Control": "no-cache, no-transform",
-            "X-Accel-Buffering": "no",  # Para nginx
-            "Connection": "keep-alive",
-        },
-        ping=60,
-    )
+    try:
+        while True:
+            should_stop = await _process_queue_messages(
+                websocket, queues, expires_at, device_id
+            )
+            if should_stop:
+                break
+    except WebSocketDisconnect:
+        logger.info(f"WebSocket público desconectado. Device: {device_id}")
+    except Exception as e:
+        logger.error(f"Error en WebSocket público: {e}", exc_info=True)
+    finally:
+        keepalive_task.cancel()
+        await ws_broker.unsubscribe(device_list, queues)
+        with suppress(Exception):
+            await websocket.close()

@@ -199,11 +199,65 @@ curl http://localhost:8000/health
 
 ---
 
+## 🔗 Endpoint Público (Share Location)
+
+Existe un endpoint WebSocket público para compartir ubicaciones con usuarios externos usando tokens PASETO temporales:
+
+### URL
+```
+ws://localhost:8000/api/v1/public/share-location/stream?token=v4.local.xxx...
+```
+
+### Características
+- ✅ **Autenticación por token PASETO** (no requiere JWT)
+- ✅ **Expiración automática** del token durante la conexión
+- ✅ **Filtra automáticamente** por el `device_id` del token
+- ✅ **Keep-alive** cada 60 segundos
+
+### Ejemplo JavaScript
+
+```javascript
+const token = 'v4.local.xxx...'; // Token PASETO obtenido de /init
+const ws = new WebSocket(`ws://localhost:8000/api/v1/public/share-location/stream?token=${token}`);
+
+ws.onopen = () => console.log('Conectado al stream público');
+
+ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    
+    if (data.event === 'message') {
+        console.log('📍 Nueva ubicación:', data.data);
+    } else if (data.event === 'expired') {
+        console.log('⏰ Token expirado, solicitar nuevo token');
+        ws.close();
+    } else if (data.event === 'ping') {
+        console.log('💓 Keep-alive');
+    }
+};
+
+ws.onclose = (event) => {
+    if (event.code === 1008) {
+        console.log('🚫 Token inválido o expirado');
+    }
+};
+```
+
+### Diferencias con el endpoint privado
+
+| Característica | `/api/v1/stream` | `/api/v1/public/share-location/stream` |
+|----------------|------------------|----------------------------------------|
+| Autenticación | No requerida | Token PASETO |
+| Device IDs | Especificados en query | Automático del token |
+| Expiración | Sin límite | Según token PASETO |
+| Uso típico | Apps internas | Links compartidos externos |
+
+---
+
 ## 📚 Más Información
 
 Ver la documentación completa en:
-- [`/docs/WEBSOCKET_MIGRATION.md`](../docs/WEBSOCKET_MIGRATION.md) - Guía completa de migración y uso
-- [`/docs/SSE_HTTP2_FIX.md`](../docs/SSE_HTTP2_FIX.md) - Contexto histórico del problema con SSE
+- [`/docs/WEBSOCKET_STREAMING.md`](../docs/WEBSOCKET_STREAMING.md) - Guía completa de uso
+- [`/docs/SSE_HTTP2_FIX.md`](../docs/SSE_HTTP2_FIX.md) - Contexto histórico (SSE deprecado)
 
 ---
 

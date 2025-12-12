@@ -16,7 +16,6 @@ class MQTTClient:
     def __init__(self):
         self.client: mqtt.Client | None = None
         self.connected = False
-        self.message_queue: asyncio.Queue = asyncio.Queue()
         self._loop: asyncio.AbstractEventLoop | None = None
         self._reconnect_attempts = 0
         # Sistema de callbacks para WebSocket Broker (alta performance)
@@ -73,16 +72,11 @@ class MQTTClient:
             payload = json.loads(msg.payload.decode("utf-8"))
             logger.debug(f"Mensaje recibido del topic {msg.topic}: {payload}")
 
-            # Poner el mensaje en la cola de forma thread-safe (legacy SSE)
+            # Llamar callbacks registrados (WebSocket Broker)
             if self._loop:
-                asyncio.run_coroutine_threadsafe(
-                    self.message_queue.put(payload), self._loop
-                )
-                
-                # Llamar callbacks registrados (WebSocket Broker)
                 for callback in self._message_callbacks:
                     asyncio.run_coroutine_threadsafe(callback(payload), self._loop)
-                    
+
         except json.JSONDecodeError as e:
             logger.error(f"Error al decodificar mensaje JSON: {e}")
         except Exception as e:
@@ -158,10 +152,6 @@ class MQTTClient:
             except Exception as e:
                 logger.error(f"Error al desconectar cliente MQTT: {e}")
 
-    async def get_message(self) -> dict:
-        """Obtener el siguiente mensaje de la cola."""
-        return await self.message_queue.get()
-
     def is_connected(self) -> bool:
         """Verificar si el cliente está conectado."""
         return self.connected
@@ -169,27 +159,31 @@ class MQTTClient:
     def register_message_callback(self, callback):
         """
         Registra un callback para recibir mensajes MQTT en tiempo real.
-        
+
         El callback debe ser una coroutine async que acepte un dict (mensaje MQTT).
         Esto permite al WebSocket Broker recibir mensajes sin usar la cola.
-        
+
         Args:
             callback: Coroutine async(message: dict) -> None
         """
         if callback not in self._message_callbacks:
             self._message_callbacks.append(callback)
-            logger.info(f"Callback registrado. Total callbacks: {len(self._message_callbacks)}")
+            logger.info(
+                f"Callback registrado. Total callbacks: {len(self._message_callbacks)}"
+            )
 
     def unregister_message_callback(self, callback):
         """
         Desregistra un callback de mensajes MQTT.
-        
+
         Args:
             callback: Coroutine a desregistrar
         """
         if callback in self._message_callbacks:
             self._message_callbacks.remove(callback)
-            logger.info(f"Callback desregistrado. Total callbacks: {len(self._message_callbacks)}")
+            logger.info(
+                f"Callback desregistrado. Total callbacks: {len(self._message_callbacks)}"
+            )
 
 
 # Instancia global del cliente MQTT
