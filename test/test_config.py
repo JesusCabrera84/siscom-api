@@ -59,4 +59,3 @@ class TestSettings:
         """
         assert settings.ALLOWED_ORIGINS is not None
         assert isinstance(settings.ALLOWED_ORIGINS, str)
-

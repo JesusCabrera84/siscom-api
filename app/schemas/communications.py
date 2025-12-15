@@ -29,10 +29,10 @@ class DeviceHistoryRequest(BaseModel):
 
 class CommunicationResponse(BaseModel):
     """
-    Schema para la respuesta de comunicaciones GPS (histórico).
+    Schema para la respuesta de comunicaciones GPS (histórico básico).
 
     Representa un registro de comunicación de un dispositivo GPS
-    de las tablas Suntech o Queclink.
+    de las tablas Suntech o Queclink con campos básicos.
     """
 
     id: int
@@ -69,6 +69,123 @@ class CommunicationResponse(BaseModel):
                 "total_distance": 150000,
                 "engine_status": "ON",
                 "fix_status": "VALID",
+                "alert_type": None,
+            }
+        }
+
+
+class CommunicationFullResponse(BaseModel):
+    """
+    Schema para la respuesta completa de comunicaciones GPS.
+
+    Incluye TODOS los campos disponibles en la tabla de comunicaciones.
+    Se usa cuando se consulta por fecha específica (received_at).
+    """
+
+    id: int
+    uuid: str | None = None
+    device_id: str
+
+    # Datos de batería
+    backup_battery_voltage: Decimal | None = None
+    main_battery_voltage: Decimal | None = None
+
+    # Datos de red celular
+    cell_id: str | None = None
+    lac: str | None = None
+    mcc: str | None = None
+    mnc: str | None = None
+    rx_lvl: int | None = None
+    network_status: str | None = None
+
+    # Datos GPS
+    course: Decimal | None = None
+    fix_status: str | None = None
+    gps_datetime: datetime | None = None
+    gps_epoch: int | None = None
+    latitude: Decimal | None = None
+    longitude: Decimal | None = None
+    satellites: int | None = None
+    speed: Decimal | None = None
+
+    # Datos del dispositivo
+    delivery_type: str | None = None
+    engine_status: str | None = None
+    firmware: str | None = None
+    model: str | None = None
+    msg_class: str | None = None
+    msg_counter: int | None = None
+
+    # Odómetro y distancia
+    odometer: int | None = None
+    total_distance: int | None = None
+    trip_distance: int | None = None
+
+    # Tiempos
+    idle_time: int | None = None
+    speed_time: int | None = None
+    trip_hourmeter: int | None = None
+
+    # Metadata de conexión
+    bytes_count: int | None = None
+    client_ip: str | None = None
+    client_port: int | None = None
+
+    # Timestamps
+    decoded_epoch: int | None = None
+    received_epoch: int | None = None
+    received_at: datetime | None = None
+    created_at: datetime | None = None
+
+    # Datos raw
+    raw_message: str | None = None
+
+    # Campo de alertas heredado de versiones anteriores
+    alert_type: str | None = None
+
+    class Config:
+        from_attributes = True
+        json_schema_extra = {
+            "example": {
+                "id": 1,
+                "uuid": "550e8400-e29b-41d4-a716-446655440000",
+                "device_id": "867564050638581",
+                "backup_battery_voltage": 3.7,
+                "main_battery_voltage": 12.5,
+                "cell_id": "12345",
+                "lac": "1234",
+                "mcc": "334",
+                "mnc": "020",
+                "rx_lvl": -65,
+                "network_status": "CONNECTED",
+                "course": 180.0,
+                "fix_status": "VALID",
+                "gps_datetime": "2024-01-15T10:30:00",
+                "gps_epoch": 1705318200,
+                "latitude": 19.4326,
+                "longitude": -99.1332,
+                "satellites": 12,
+                "speed": 45.5,
+                "delivery_type": "GPRS",
+                "engine_status": "ON",
+                "firmware": "1.0.0",
+                "model": "ST300",
+                "msg_class": "STATUS",
+                "msg_counter": 100,
+                "odometer": 15000,
+                "total_distance": 150000,
+                "trip_distance": 500,
+                "idle_time": 0,
+                "speed_time": 3600,
+                "trip_hourmeter": 100,
+                "bytes_count": 256,
+                "client_ip": "192.168.1.1",
+                "client_port": 8080,
+                "decoded_epoch": 1705318200,
+                "received_epoch": 1705318201,
+                "received_at": "2024-01-15T10:30:01",
+                "created_at": "2024-01-15T10:30:01",
+                "raw_message": None,
                 "alert_type": None,
             }
         }

@@ -1,7 +1,10 @@
+from datetime import date
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.core.database import get_db
 from app.schemas.communications import (
+    CommunicationFullResponse,
     CommunicationLatestResponse,
     CommunicationResponse,
 )
@@ -46,10 +49,17 @@ async def get_communications_history(  # noqa: B008
 
 
 @router.get(
-    "/devices/{device_id}/communications", response_model=list[CommunicationResponse]
+    "/devices/{device_id}/communications",
+    response_model=list[CommunicationFullResponse] | list[CommunicationResponse],
 )
 async def get_device_communications(
     device_id: str,
+    received_at: date | None = Query(
+        None,
+        description="Fecha para filtrar comunicaciones (formato: YYYY-MM-DD). "
+        "Si se proporciona, devuelve TODOS los campos disponibles.",
+        example="2024-12-14",
+    ),
     db=Depends(get_db),
 ):
     """
@@ -60,15 +70,28 @@ async def get_device_communications(
     **Path Parameters:**
     - `device_id`: ID del dispositivo GPS
 
-    **Ejemplo:**
+    **Query Parameters:**
+    - `received_at`: Fecha opcional para filtrar (YYYY-MM-DD).
+      Si se proporciona, devuelve todos los registros de esa fecha con **todos los campos**.
+
+    **Ejemplos:**
     ```
     GET /api/v1/devices/867564050638581/communications
+    GET /api/v1/devices/867564050638581/communications?received_at=2024-12-14
     ```
 
     **Returns:**
-    - Lista de comunicaciones del dispositivo especificado
+    - Sin filtro de fecha: Lista con campos básicos (CommunicationResponse)
+    - Con filtro de fecha: Lista con TODOS los campos (CommunicationFullResponse)
     """
-    return await get_communications(db, [device_id])
+    results = await get_communications(db, [device_id], received_at=received_at)
+
+    # Si hay filtro de fecha, devolver respuesta completa
+    if received_at is not None:
+        return [CommunicationFullResponse.model_validate(r) for r in results]
+
+    # Sin filtro, devolver respuesta básica (comportamiento original)
+    return [CommunicationResponse.model_validate(r) for r in results]
 
 
 # ============================================================================

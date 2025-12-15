@@ -19,66 +19,52 @@ class TestCommunicationsEndpointMultiple:
         assert response.status_code == 403  # FastAPI retorna 403 sin auth
 
     def test_get_communications_with_valid_token(
-        self,
-        client: TestClient,
-        auth_headers: dict,
-        sample_suntech_communication
+        self, client: TestClient, auth_headers: dict, sample_suntech_communication
     ):
         """
         Test: GET con token válido retorna 200.
         """
         response = client.get(
-            "/api/v1/communications?device_ids=867564050638581",
-            headers=auth_headers
+            "/api/v1/communications?device_ids=867564050638581", headers=auth_headers
         )
 
         assert response.status_code == 200
         assert isinstance(response.json(), list)
 
     def test_get_communications_with_expired_token(
-        self,
-        client: TestClient,
-        expired_token: str
+        self, client: TestClient, expired_token: str
     ):
         """
         Test: Token expirado retorna 401.
         """
         headers = {"Authorization": f"Bearer {expired_token}"}
         response = client.get(
-            "/api/v1/communications?device_ids=TEST123",
-            headers=headers
+            "/api/v1/communications?device_ids=TEST123", headers=headers
         )
 
         assert response.status_code == 401
 
     def test_get_communications_with_invalid_token(
-        self,
-        client: TestClient,
-        invalid_token: str
+        self, client: TestClient, invalid_token: str
     ):
         """
         Test: Token inválido retorna 401.
         """
         headers = {"Authorization": f"Bearer {invalid_token}"}
         response = client.get(
-            "/api/v1/communications?device_ids=TEST123",
-            headers=headers
+            "/api/v1/communications?device_ids=TEST123", headers=headers
         )
 
         assert response.status_code == 401
 
     def test_get_communications_returns_correct_data(
-        self,
-        client: TestClient,
-        auth_headers: dict,
-        sample_suntech_communication
+        self, client: TestClient, auth_headers: dict, sample_suntech_communication
     ):
         """
         Test: Endpoint retorna los datos correctos.
         """
         response = client.get(
-            "/api/v1/communications?device_ids=867564050638581",
-            headers=auth_headers
+            "/api/v1/communications?device_ids=867564050638581", headers=auth_headers
         )
 
         assert response.status_code == 200
@@ -91,17 +77,14 @@ class TestCommunicationsEndpointMultiple:
         assert "speed" in data[0]
 
     def test_get_communications_multiple_devices(
-        self,
-        client: TestClient,
-        auth_headers: dict,
-        multiple_communications
+        self, client: TestClient, auth_headers: dict, multiple_communications
     ):
         """
         Test: Query con múltiples device IDs.
         """
         response = client.get(
             "/api/v1/communications?device_ids=SUNTECH0&device_ids=SUNTECH1&device_ids=QUECLINK0",
-            headers=auth_headers
+            headers=auth_headers,
         )
 
         assert response.status_code == 200
@@ -118,14 +101,14 @@ class TestCommunicationsEndpointMultiple:
         client: TestClient,
         auth_headers: dict,
         sample_suntech_communication,
-        sample_queclink_communication
+        sample_queclink_communication,
     ):
         """
         Test: Resultados incluyen ambas tablas (Suntech y Queclink).
         """
         response = client.get(
             "/api/v1/communications?device_ids=867564050638581&device_ids=QUECLINK123",
-            headers=auth_headers
+            headers=auth_headers,
         )
 
         assert response.status_code == 200
@@ -134,36 +117,28 @@ class TestCommunicationsEndpointMultiple:
         assert len(data) == 2
         device_ids = {item["device_id"] for item in data}
         assert "867564050638581" in device_ids  # Suntech
-        assert "QUECLINK123" in device_ids      # Queclink
+        assert "QUECLINK123" in device_ids  # Queclink
 
     def test_get_communications_empty_result(
-        self,
-        client: TestClient,
-        auth_headers: dict
+        self, client: TestClient, auth_headers: dict
     ):
         """
         Test: Device ID no existente retorna array vacío.
         """
         response = client.get(
-            "/api/v1/communications?device_ids=NONEXISTENT999",
-            headers=auth_headers
+            "/api/v1/communications?device_ids=NONEXISTENT999", headers=auth_headers
         )
 
         assert response.status_code == 200
         assert response.json() == []
 
     def test_get_communications_missing_device_ids(
-        self,
-        client: TestClient,
-        auth_headers: dict
+        self, client: TestClient, auth_headers: dict
     ):
         """
         Test: Request sin device_ids retorna 422.
         """
-        response = client.get(
-            "/api/v1/communications",
-            headers=auth_headers
-        )
+        response = client.get("/api/v1/communications", headers=auth_headers)
 
         assert response.status_code == 422
 
@@ -181,34 +156,26 @@ class TestCommunicationsSingleDeviceEndpoint:
         assert response.status_code == 403
 
     def test_get_device_communications_with_valid_token(
-        self,
-        client: TestClient,
-        auth_headers: dict,
-        sample_suntech_communication
+        self, client: TestClient, auth_headers: dict, sample_suntech_communication
     ):
         """
         Test: GET con token válido retorna 200.
         """
         response = client.get(
-            "/api/v1/devices/867564050638581/communications",
-            headers=auth_headers
+            "/api/v1/devices/867564050638581/communications", headers=auth_headers
         )
 
         assert response.status_code == 200
         assert isinstance(response.json(), list)
 
     def test_get_device_communications_returns_correct_device(
-        self,
-        client: TestClient,
-        auth_headers: dict,
-        multiple_communications
+        self, client: TestClient, auth_headers: dict, multiple_communications
     ):
         """
         Test: Solo retorna comunicaciones del device ID especificado.
         """
         response = client.get(
-            "/api/v1/devices/SUNTECH1/communications",
-            headers=auth_headers
+            "/api/v1/devices/SUNTECH1/communications", headers=auth_headers
         )
 
         assert response.status_code == 200
@@ -218,16 +185,13 @@ class TestCommunicationsSingleDeviceEndpoint:
         assert data[0]["device_id"] == "SUNTECH1"
 
     def test_get_device_communications_nonexistent_device(
-        self,
-        client: TestClient,
-        auth_headers: dict
+        self, client: TestClient, auth_headers: dict
     ):
         """
         Test: Device no existente retorna array vacío.
         """
         response = client.get(
-            "/api/v1/devices/NONEXISTENT/communications",
-            headers=auth_headers
+            "/api/v1/devices/NONEXISTENT/communications", headers=auth_headers
         )
 
         assert response.status_code == 200
@@ -239,9 +203,7 @@ class TestSSEStreamEndpoints:
     """Tests para endpoints de Server-Sent Events."""
 
     def test_sse_stream_multiple_devices_no_auth_required(
-        self,
-        client: TestClient,
-        sse_headers: dict
+        self, client: TestClient, sse_headers: dict
     ):
         """
         Test: Endpoint SSE no requiere autenticación.
@@ -251,7 +213,7 @@ class TestSSEStreamEndpoints:
         response = client.get(
             "/api/v1/communications/stream?device_ids=TEST123",
             headers=sse_headers,
-            timeout=1  # Timeout corto para no esperar indefinidamente
+            timeout=1,  # Timeout corto para no esperar indefinidamente
         )
 
         # Debería aceptar la conexión (200)
@@ -264,15 +226,13 @@ class TestSSEStreamEndpoints:
         response = client.get(
             "/api/v1/communications/stream?device_ids=TEST123",
             headers={"Accept": "text/event-stream"},
-            timeout=1
+            timeout=1,
         )
 
         assert response.status_code == 200
 
     def test_sse_stream_single_device_no_auth_required(
-        self,
-        client: TestClient,
-        sse_headers: dict
+        self, client: TestClient, sse_headers: dict
     ):
         """
         Test: SSE de un dispositivo no requiere auth.
@@ -280,7 +240,7 @@ class TestSSEStreamEndpoints:
         response = client.get(
             "/api/v1/devices/TEST123/communications/stream",
             headers=sse_headers,
-            timeout=1
+            timeout=1,
         )
 
         assert response.status_code == 200
@@ -290,8 +250,7 @@ class TestSSEStreamEndpoints:
         Test: Stream sin device_ids retorna 422.
         """
         response = client.get(
-            "/api/v1/communications/stream",
-            headers={"Accept": "text/event-stream"}
+            "/api/v1/communications/stream", headers={"Accept": "text/event-stream"}
         )
 
         assert response.status_code == 422
@@ -302,17 +261,13 @@ class TestCommunicationsResponseSchema:
     """Tests para verificar el schema de respuestas."""
 
     def test_response_has_required_fields(
-        self,
-        client: TestClient,
-        auth_headers: dict,
-        sample_suntech_communication
+        self, client: TestClient, auth_headers: dict, sample_suntech_communication
     ):
         """
         Test: Respuesta contiene todos los campos requeridos.
         """
         response = client.get(
-            "/api/v1/communications?device_ids=867564050638581",
-            headers=auth_headers
+            "/api/v1/communications?device_ids=867564050638581", headers=auth_headers
         )
 
         data = response.json()[0]
@@ -331,10 +286,7 @@ class TestCommunicationsResponseSchema:
             assert field in data
 
     def test_response_handles_null_values(
-        self,
-        client: TestClient,
-        auth_headers: dict,
-        db_session
+        self, client: TestClient, auth_headers: dict, db_session
     ):
         """
         Test: Respuesta maneja correctamente valores NULL.
@@ -352,8 +304,7 @@ class TestCommunicationsResponseSchema:
         await db_session.commit()
 
         response = client.get(
-            "/api/v1/communications?device_ids=NULL_TEST",
-            headers=auth_headers
+            "/api/v1/communications?device_ids=NULL_TEST", headers=auth_headers
         )
 
         data = response.json()[0]
@@ -362,4 +313,3 @@ class TestCommunicationsResponseSchema:
         assert data["latitude"] is None
         assert data["longitude"] is None
         assert data["speed"] is None
-

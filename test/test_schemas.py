@@ -207,4 +207,3 @@ class TestCommunicationResponse:
         assert response.id == 1
         assert response.device_id == "867564050638581"
         assert response.latitude == Decimal("19.4326")
-

@@ -1,3 +1,5 @@
+from datetime import date
+
 from sqlalchemy import func
 from sqlalchemy.future import select
 
@@ -8,13 +10,16 @@ from app.models.communications import (
 )
 
 
-async def get_communications(session, device_ids: list[str]):
+async def get_communications(
+    session, device_ids: list[str], received_at: date | None = None
+):
     """
     Obtiene el histórico completo de comunicaciones de los dispositivos especificados.
 
     Args:
         session: Sesión de base de datos
         device_ids: Lista de IDs de dispositivos
+        received_at: Fecha opcional para filtrar por received_at (solo fecha, sin hora)
 
     Returns:
         Lista con todas las comunicaciones (Suntech + Queclink)
@@ -25,6 +30,19 @@ async def get_communications(session, device_ids: list[str]):
     query_queclink = select(CommunicationQueclink).where(
         CommunicationQueclink.device_id.in_(device_ids)
     )
+
+    # Si se proporciona received_at, filtrar por esa fecha
+    if received_at is not None:
+        query_suntech = query_suntech.where(
+            func.date(CommunicationSuntech.received_at) == received_at
+        )
+        query_queclink = query_queclink.where(
+            func.date(CommunicationQueclink.received_at) == received_at
+        )
+
+    # Ordenar por received_at descendente para obtener los más recientes primero
+    query_suntech = query_suntech.order_by(CommunicationSuntech.received_at.desc())
+    query_queclink = query_queclink.order_by(CommunicationQueclink.received_at.desc())
 
     suntech = (await session.execute(query_suntech)).scalars().all()
     queclink = (await session.execute(query_queclink)).scalars().all()

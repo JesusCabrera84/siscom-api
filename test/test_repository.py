@@ -14,10 +14,7 @@ class TestGetCommunications:
     """Tests para la función get_communications."""
 
     @pytest.mark.asyncio
-    async def test_get_communications_empty_database(
-        self,
-        db_session: AsyncSession
-    ):
+    async def test_get_communications_empty_database(self, db_session: AsyncSession):
         """
         Test: Función retorna lista vacía si no hay datos.
         """
@@ -29,9 +26,7 @@ class TestGetCommunications:
 
     @pytest.mark.asyncio
     async def test_get_communications_returns_suntech_data(
-        self,
-        db_session: AsyncSession,
-        sample_suntech_communication
+        self, db_session: AsyncSession, sample_suntech_communication
     ):
         """
         Test: Función retorna datos de Suntech.
@@ -45,9 +40,7 @@ class TestGetCommunications:
 
     @pytest.mark.asyncio
     async def test_get_communications_returns_queclink_data(
-        self,
-        db_session: AsyncSession,
-        sample_queclink_communication
+        self, db_session: AsyncSession, sample_queclink_communication
     ):
         """
         Test: Función retorna datos de Queclink.
@@ -64,7 +57,7 @@ class TestGetCommunications:
         self,
         db_session: AsyncSession,
         sample_suntech_communication,
-        sample_queclink_communication
+        sample_queclink_communication,
     ):
         """
         Test: Función mezcla resultados de ambas tablas.
@@ -80,9 +73,7 @@ class TestGetCommunications:
 
     @pytest.mark.asyncio
     async def test_get_communications_with_multiple_devices(
-        self,
-        db_session: AsyncSession,
-        multiple_communications
+        self, db_session: AsyncSession, multiple_communications
     ):
         """
         Test: Función maneja múltiples device IDs correctamente.
@@ -97,9 +88,7 @@ class TestGetCommunications:
 
     @pytest.mark.asyncio
     async def test_get_communications_filters_correctly(
-        self,
-        db_session: AsyncSession,
-        multiple_communications
+        self, db_session: AsyncSession, multiple_communications
     ):
         """
         Test: Función solo retorna los dispositivos solicitados.
@@ -116,9 +105,7 @@ class TestGetCommunications:
 
     @pytest.mark.asyncio
     async def test_get_communications_with_single_device(
-        self,
-        db_session: AsyncSession,
-        sample_suntech_communication
+        self, db_session: AsyncSession, sample_suntech_communication
     ):
         """
         Test: Función funciona con un solo device ID.
@@ -131,9 +118,7 @@ class TestGetCommunications:
 
     @pytest.mark.asyncio
     async def test_get_communications_returns_correct_type(
-        self,
-        db_session: AsyncSession,
-        sample_suntech_communication
+        self, db_session: AsyncSession, sample_suntech_communication
     ):
         """
         Test: Función retorna objetos SQLAlchemy correctos.
@@ -151,4 +136,3 @@ class TestGetCommunications:
         assert hasattr(result[0], "device_id")
         assert hasattr(result[0], "latitude")
         assert hasattr(result[0], "longitude")
-

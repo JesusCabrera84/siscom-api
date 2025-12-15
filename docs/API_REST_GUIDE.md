@@ -14,14 +14,17 @@ Los endpoints han sido migrados a seguir las **mejores prácticas REST**:
 
 ## 📋 Tabla de Endpoints
 
-| Endpoint                                                | Método | Auth   | Descripción                                |
-| ------------------------------------------------------- | ------ | ------ | ------------------------------------------ |
-| `GET /api/v1/communications`                            | GET    | ✅ JWT | Histórico de múltiples dispositivos        |
-| `GET /api/v1/communications/latest`                     | GET    | ✅ JWT | Última comunicación de múltiples devices   |
-| `GET /api/v1/devices/{device_id}/communications`        | GET    | ✅ JWT | Histórico de un solo dispositivo           |
-| `GET /api/v1/devices/{device_id}/communications/latest` | GET    | ✅ JWT | Última comunicación de un solo dispositivo |
-| `GET /api/v1/stream`                                    | GET    | ❌ No  | Stream SSE en tiempo real desde MQTT       |
-| `GET /health`                                           | GET    | ❌ No  | Health check del servicio                  |
+| Endpoint                                                | Método | Auth   | Descripción                                              |
+| ------------------------------------------------------- | ------ | ------ | -------------------------------------------------------- |
+| `GET /api/v1/communications`                            | GET    | ❌ No  | Histórico de múltiples dispositivos                      |
+| `GET /api/v1/communications/latest`                     | GET    | ❌ No  | Última comunicación de múltiples devices                 |
+| `GET /api/v1/devices/{device_id}/communications`        | GET    | ❌ No  | Histórico de un dispositivo (soporta `?received_at=`)    |
+| `GET /api/v1/devices/{device_id}/communications/latest` | GET    | ❌ No  | Última comunicación de un solo dispositivo               |
+| `WS /api/v1/stream`                                     | WS     | ❌ No  | WebSocket en tiempo real desde MQTT                      |
+| `GET /api/v1/stream/stats`                              | GET    | ❌ No  | Estadísticas del broker WebSocket                        |
+| `GET /health`                                           | GET    | ❌ No  | Health check del servicio                                |
+
+> ⚠️ **Nota:** Actualmente ningún endpoint requiere autenticación. El código de JWT existe en `app/core/security.py` pero no está activo en las rutas.
 
 ---
 
@@ -35,7 +38,6 @@ Obtener histórico de múltiples dispositivos GPS
 
 ```http
 GET /api/v1/communications?device_ids=867564050638581&device_ids=DEVICE123
-Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 ```
 
 #### Query Parameters
@@ -47,20 +49,14 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 #### Ejemplo con cURL
 
 ```bash
-curl --location 'http://10.8.0.1:8000/api/v1/communications?device_ids=867564050638581&device_ids=DEVICE123' \
---header 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.e30.XmNK3GpH3Ys_7wsYBfq4C3M6goz71I7dTgUkuIa5lyQ'
+curl 'http://10.8.0.1:8000/api/v1/communications?device_ids=867564050638581&device_ids=DEVICE123'
 ```
 
 #### Ejemplo con JavaScript
 
 ```javascript
 const response = await fetch(
-  "http://10.8.0.1:8000/api/v1/communications?device_ids=867564050638581&device_ids=DEVICE123",
-  {
-    headers: {
-      Authorization: "Bearer eyJhbGciOiJIUzI1NiJ9...",
-    },
-  },
+  "http://10.8.0.1:8000/api/v1/communications?device_ids=867564050638581&device_ids=DEVICE123"
 );
 
 const data = await response.json();
@@ -95,13 +91,15 @@ const data = await response.json();
 
 ### 2️⃣ GET /api/v1/devices/{device_id}/communications
 
-Obtener histórico de UN solo dispositivo GPS
+Obtener histórico de comunicaciones de UN solo dispositivo GPS.
+
+**Soporta filtro por fecha** con el parámetro `received_at`. Si se proporciona, devuelve **todos los campos disponibles**.
 
 #### Request - Un Dispositivo
 
 ```http
 GET /api/v1/devices/867564050638581/communications
-Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
+GET /api/v1/devices/867564050638581/communications?received_at=2024-12-14
 ```
 
 #### Path Parameters
@@ -110,30 +108,41 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 | ----------- | ------ | --------- | ---------------------- |
 | `device_id` | string | ✅ Sí     | ID del dispositivo GPS |
 
+#### Query Parameters
+
+| Parámetro     | Tipo   | Requerido | Descripción                                                                 |
+| ------------- | ------ | --------- | --------------------------------------------------------------------------- |
+| `received_at` | date   | ❌ No     | Fecha para filtrar (YYYY-MM-DD). Si se usa, devuelve **todos los campos**. |
+
 #### Ejemplo con cURL
 
 ```bash
-curl --location 'http://10.8.0.1:8000/api/v1/devices/867564050638581/communications' \
---header 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.e30.XmNK3GpH3Ys_7wsYBfq4C3M6goz71I7dTgUkuIa5lyQ'
+# Sin filtro (campos básicos)
+curl 'http://10.8.0.1:8000/api/v1/devices/867564050638581/communications'
+
+# Con filtro de fecha (TODOS los campos)
+curl 'http://10.8.0.1:8000/api/v1/devices/867564050638581/communications?received_at=2024-12-14'
 ```
 
 #### Ejemplo con JavaScript
 
 ```javascript
 const deviceId = "867564050638581";
+
+// Sin filtro
 const response = await fetch(
-  `http://10.8.0.1:8000/api/v1/devices/${deviceId}/communications`,
-  {
-    headers: {
-      Authorization: "Bearer eyJhbGciOiJIUzI1NiJ9...",
-    },
-  },
+  `http://10.8.0.1:8000/api/v1/devices/${deviceId}/communications`
+);
+
+// Con filtro de fecha
+const responseFiltered = await fetch(
+  `http://10.8.0.1:8000/api/v1/devices/${deviceId}/communications?received_at=2024-12-14`
 );
 
 const data = await response.json();
 ```
 
-#### Response (200 OK)
+#### Response SIN filtro (200 OK) - Campos básicos
 
 ```json
 [
@@ -141,10 +150,72 @@ const data = await response.json();
     "id": 1,
     "device_id": "867564050638581",
     "latitude": 19.4326,
-    ...
+    "longitude": -99.1332,
+    "speed": 45.5,
+    "course": 180.0,
+    "gps_datetime": "2024-12-14T10:30:00",
+    "main_battery_voltage": 12.5,
+    "backup_battery_voltage": 3.7,
+    "odometer": 15000,
+    "trip_distance": 500,
+    "total_distance": 150000,
+    "engine_status": "ON",
+    "fix_status": "VALID",
+    "alert_type": null
   }
 ]
 ```
+
+#### Response CON filtro `received_at` (200 OK) - Todos los campos
+
+```json
+[
+  {
+    "id": 1,
+    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+    "device_id": "867564050638581",
+    "backup_battery_voltage": 3.7,
+    "main_battery_voltage": 12.5,
+    "cell_id": "12345",
+    "lac": "1234",
+    "mcc": "334",
+    "mnc": "020",
+    "rx_lvl": -65,
+    "network_status": "CONNECTED",
+    "course": 180.0,
+    "fix_status": "VALID",
+    "gps_datetime": "2024-12-14T10:30:00",
+    "gps_epoch": 1734176400,
+    "latitude": 19.4326,
+    "longitude": -99.1332,
+    "satellites": 12,
+    "speed": 45.5,
+    "delivery_type": "GPRS",
+    "engine_status": "ON",
+    "firmware": "1.0.0",
+    "model": "ST300",
+    "msg_class": "STATUS",
+    "msg_counter": 100,
+    "odometer": 15000,
+    "total_distance": 150000,
+    "trip_distance": 500,
+    "idle_time": 0,
+    "speed_time": 3600,
+    "trip_hourmeter": 100,
+    "bytes_count": 256,
+    "client_ip": "192.168.1.1",
+    "client_port": 8080,
+    "decoded_epoch": 1734176400,
+    "received_epoch": 1734176401,
+    "received_at": "2024-12-14T10:30:01",
+    "created_at": "2024-12-14T10:30:01",
+    "raw_message": null,
+    "alert_type": null
+  }
+]
+```
+
+**💡 Nota:** Cuando se usa `received_at`, se devuelven todos los registros de esa fecha ordenados por hora descendente (más recientes primero).
 
 ---
 
@@ -156,7 +227,6 @@ Obtener la última comunicación de múltiples dispositivos GPS
 
 ```http
 GET /api/v1/communications/latest?device_ids=867564050638581&device_ids=DEVICE123
-Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 ```
 
 #### Query Parameters
@@ -168,20 +238,14 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 #### Ejemplo con cURL
 
 ```bash
-curl --location 'http://10.8.0.1:8000/api/v1/communications/latest?device_ids=867564050638581&device_ids=DEVICE123' \
---header 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.e30.XmNK3GpH3Ys_7wsYBfq4C3M6goz71I7dTgUkuIa5lyQ'
+curl 'http://10.8.0.1:8000/api/v1/communications/latest?device_ids=867564050638581&device_ids=DEVICE123'
 ```
 
 #### Ejemplo con JavaScript
 
 ```javascript
 const response = await fetch(
-  "http://10.8.0.1:8000/api/v1/communications/latest?device_ids=867564050638581&device_ids=DEVICE123",
-  {
-    headers: {
-      Authorization: "Bearer eyJhbGciOiJIUzI1NiJ9...",
-    },
-  },
+  "http://10.8.0.1:8000/api/v1/communications/latest?device_ids=867564050638581&device_ids=DEVICE123"
 );
 
 const data = await response.json();
@@ -233,7 +297,7 @@ const data = await response.json();
 
 - `GET /communications` → Retorna TODO el histórico (puede ser miles de registros)
 - `GET /communications/latest` → Retorna SOLO la última comunicación de cada dispositivo
-- `GET /api/v1/stream` → Conexión persistente con actualizaciones en tiempo real desde MQTT
+- `WS /api/v1/stream` → Conexión WebSocket con actualizaciones en tiempo real desde MQTT
 
 **🎯 Caso de uso:** Ideal para dashboards que necesitan mostrar la posición/estado actual de múltiples dispositivos en un mapa sin cargar todo el histórico.
 
@@ -247,7 +311,6 @@ Obtener la última comunicación de UN solo dispositivo GPS
 
 ```http
 GET /api/v1/devices/867564050638581/communications/latest
-Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 ```
 
 #### Path Parameters
@@ -259,8 +322,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 #### Ejemplo con cURL
 
 ```bash
-curl --location 'http://10.8.0.1:8000/api/v1/devices/867564050638581/communications/latest' \
---header 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.e30.XmNK3GpH3Ys_7wsYBfq4C3M6goz71I7dTgUkuIa5lyQ'
+curl 'http://10.8.0.1:8000/api/v1/devices/867564050638581/communications/latest'
 ```
 
 #### Ejemplo con JavaScript
@@ -268,12 +330,7 @@ curl --location 'http://10.8.0.1:8000/api/v1/devices/867564050638581/communicati
 ```javascript
 const deviceId = "867564050638581";
 const response = await fetch(
-  `http://10.8.0.1:8000/api/v1/devices/${deviceId}/communications/latest`,
-  {
-    headers: {
-      Authorization: "Bearer eyJhbGciOiJIUzI1NiJ9...",
-    },
-  },
+  `http://10.8.0.1:8000/api/v1/devices/${deviceId}/communications/latest`
 );
 
 const data = await response.json();
@@ -320,107 +377,121 @@ const data = await response.json();
 
 - `GET /devices/{id}/communications` → Retorna TODO el histórico del dispositivo
 - `GET /devices/{id}/communications/latest` → Retorna SOLO la última comunicación
-- `GET /api/v1/stream?device_ids={id}` → Stream en tiempo real desde MQTT
+- `WS /api/v1/stream?device_ids={id}` → WebSocket en tiempo real desde MQTT
 
 **🎯 Caso de uso:** Ideal para consultar rápidamente el estado actual de un dispositivo específico (última posición, batería, velocidad, etc.).
 
 ---
 
-### 5️⃣ GET /api/v1/stream
+### 5️⃣ WS /api/v1/stream (WebSocket)
 
-Stream SSE en tiempo real desde MQTT (Mosquitto)
+Stream WebSocket en tiempo real desde MQTT (Mosquitto)
 
-**⚡ Este endpoint consume mensajes en tiempo real desde el broker MQTT y los transmite vía Server-Sent Events.**
+**⚡ Este endpoint consume mensajes en tiempo real desde el broker MQTT y los transmite vía WebSocket.**
 
-#### Request
+#### URL de Conexión
 
-```http
-GET /api/v1/stream?device_ids=867564050638581,DEVICE123
-Accept: text/event-stream
+```
+ws://localhost:8000/api/v1/stream?device_ids=867564050638581,DEVICE123
 ```
 
 #### Query Parameters
 
-| Parámetro    | Tipo   | Requerido | Descripción                                               |
-| ------------ | ------ | --------- | --------------------------------------------------------- |
-| `device_ids` | string | ❌ No     | IDs de dispositivos separados por comas (filtro opcional) |
+| Parámetro    | Tipo   | Requerido | Descripción                                     |
+| ------------ | ------ | --------- | ----------------------------------------------- |
+| `device_ids` | string | ✅ Sí     | IDs de dispositivos separados por comas         |
 
-**Nota:** Si no se especifica `device_ids`, se recibirán eventos de **todos** los dispositivos.
+**Nota:** El parámetro `device_ids` es **obligatorio**. Si no se especifica, la conexión se cerrará con código 1008.
 
-#### Ejemplo con cURL
-
-```bash
-# Todos los dispositivos
-curl -N 'http://10.8.0.1:8000/api/v1/stream'
-
-# Filtrar por device_ids específicos
-curl -N 'http://10.8.0.1:8000/api/v1/stream?device_ids=867564050638581,DEVICE123'
-```
-
-#### Ejemplo con JavaScript (EventSource)
+#### Ejemplo con JavaScript (WebSocket)
 
 ```javascript
-// Todos los dispositivos
-const eventSource = new EventSource("http://10.8.0.1:8000/api/v1/stream");
-
-// O filtrar por device_ids
+// Conectar al WebSocket
 const deviceIds = "867564050638581,DEVICE123";
-const eventSource = new EventSource(
-  `http://10.8.0.1:8000/api/v1/stream?device_ids=${deviceIds}`,
+const ws = new WebSocket(
+  `ws://localhost:8000/api/v1/stream?device_ids=${deviceIds}`
 );
 
-eventSource.addEventListener("message", (event) => {
-  const data = JSON.parse(event.data);
-  console.log("Evento MQTT recibido:", data);
-  // Estructura completa del mensaje de Mosquitto:
-  // {
-  //   "data": {
-  //     "DEVICE_ID": "0848086072",
-  //     "LATITUD": "+20.652472",
-  //     "LONGITUD": "-100.391423",
-  //     "SPEED": "0.00",
-  //     "GPS_DATETIME": "2025-10-18 00:51:16",
-  //     ...
-  //   },
-  //   "decoded": {...},
-  //   "metadata": {...},
-  //   "raw": "...",
-  //   "uuid": "..."
-  // }
-});
+ws.onopen = () => {
+  console.log("✅ WebSocket conectado");
+};
 
-eventSource.addEventListener("ping", (event) => {
-  console.log("Keep-alive recibido");
-});
+ws.onmessage = (event) => {
+  const message = JSON.parse(event.data);
 
-eventSource.onerror = (error) => {
-  console.error("Error en SSE:", error);
-  eventSource.close();
+  if (message.event === "message") {
+    // Datos del dispositivo
+    console.log("📡 Evento MQTT recibido:", message.data);
+    // Estructura:
+    // {
+    //   "event": "message",
+    //   "data": {
+    //     "data": {
+    //       "DEVICE_ID": "0848086072",
+    //       "LATITUD": "+20.652472",
+    //       "LONGITUD": "-100.391423",
+    //       "SPEED": "0.00",
+    //       ...
+    //     },
+    //     "decoded": {...},
+    //     "metadata": {...}
+    //   }
+    // }
+  } else if (message.event === "ping") {
+    console.log("💓 Keep-alive recibido");
+  }
+};
+
+ws.onerror = (error) => {
+  console.error("❌ Error en WebSocket:", error);
+};
+
+ws.onclose = (event) => {
+  console.log("🔌 WebSocket cerrado:", event.code, event.reason);
 };
 ```
 
-#### Response (Stream SSE)
+#### Formato de Mensajes
 
-```plaintext
-event: message
-data: {"data":{"DEVICE_ID":"0848086072","LATITUD":"+20.652472","LONGITUD":"-100.391423","SPEED":"0.00",...},"decoded":{...},"metadata":{...}}
+**Mensaje de datos:**
 
-event: ping
-data: {"type":"keep-alive"}
+```json
+{
+  "event": "message",
+  "data": {
+    "data": {
+      "DEVICE_ID": "0848086072",
+      "LATITUD": "+20.652472",
+      "LONGITUD": "-100.391423",
+      "SPEED": "0.00"
+    },
+    "decoded": {},
+    "metadata": {}
+  }
+}
+```
 
-event: message
-data: {"data":{"DEVICE_ID":"0848086073","LATITUD":"+20.653000","LONGITUD":"-100.392000","SPEED":"15.50",...},"decoded":{...},"metadata":{...}}
+**Keep-alive (cada 60 segundos):**
+
+```json
+{
+  "event": "ping",
+  "data": {
+    "type": "keep-alive"
+  }
+}
 ```
 
 #### Características
 
 - ✅ **Tiempo Real**: Consume mensajes directamente de Mosquitto MQTT
-- ✅ **Filtrado**: Soporta filtro opcional por `device_ids`
-- ✅ **Keep-alive**: Envía eventos `ping` cada 30 segundos para mantener la conexión
-- ✅ **Sin Autenticación**: No requiere JWT (ajustable según necesidad)
-- ✅ **Formato Completo**: Incluye toda la información del mensaje MQTT (data, decoded, metadata, raw)
+- ✅ **WebSocket**: Full-duplex, sin problemas de buffering en ALB/nginx
+- ✅ **Filtrado Obligatorio**: Requiere especificar `device_ids`
+- ✅ **Keep-alive**: Envía eventos `ping` cada 60 segundos
+- ✅ **Sin Autenticación**: No requiere token
+- ✅ **Backpressure**: Control automático de flujo si el cliente es lento
 
-Ver documentación completa en [MQTT_INTEGRATION.md](../MQTT_INTEGRATION.md)
+Ver documentación completa en [WEBSOCKET_STREAMING.md](./WEBSOCKET_STREAMING.md)
 
 ---
 
@@ -431,7 +502,6 @@ Ver documentación completa en [MQTT_INTEGRATION.md](../MQTT_INTEGRATION.md)
 ```bash
 # POST con body JSON
 curl -X POST http://10.8.0.1:8000/communications/history \
-  -H "Authorization: Bearer TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"device_ids": ["867564050638581"]}'
 ```
@@ -440,8 +510,7 @@ curl -X POST http://10.8.0.1:8000/communications/history \
 
 ```bash
 # GET con query parameters
-curl http://10.8.0.1:8000/api/v1/communications?device_ids=867564050638581 \
-  -H "Authorization: Bearer TOKEN"
+curl 'http://10.8.0.1:8000/api/v1/communications?device_ids=867564050638581'
 ```
 
 ---
@@ -482,15 +551,19 @@ curl http://10.8.0.1:8000/api/v1/communications?device_ids=867564050638581 \
   │   ├── GET         → histórico completo de múltiples
   │   └── latest/     → última comunicación de múltiples
   │
-  └── devices/
-      └── {device_id}/             (recurso individual)
-          └── communications/
-              ├── GET         → histórico completo del dispositivo
-              └── latest/     → última comunicación del dispositivo
-
-/api/v1/
-  └── stream/                        (MQTT tiempo real)
-      └── GET         → stream SSE desde Mosquitto (opcional: ?device_ids=X,Y)
+  ├── devices/
+  │   └── {device_id}/             (recurso individual)
+  │       └── communications/
+  │           ├── GET         → histórico completo del dispositivo
+  │           └── latest/     → última comunicación del dispositivo
+  │
+  ├── stream/                      (WebSocket tiempo real)
+  │   ├── WS          → WebSocket desde MQTT (requiere: ?device_ids=X,Y)
+  │   └── stats/      → estadísticas del broker
+  │
+  └── public/share-location/       (enlaces públicos con PASETO)
+      ├── init/       → validar token y obtener última ubicación
+      └── stream/     → WebSocket público con token PASETO
 ```
 
 ### ✅ 4. Query Parameters para Filtros
@@ -544,7 +617,7 @@ const currentPositions = await fetch(
 // Retorna SOLO la última posición de cada uno
 ```
 
-### 🔴 Tiempo Real (`/api/v1/stream` - MQTT)
+### 🔴 Tiempo Real (`/api/v1/stream` - WebSocket)
 
 **Cuándo usar:**
 
@@ -552,53 +625,85 @@ const currentPositions = await fetch(
 - Seguimiento activo de vehículos en operación
 - Alertas instantáneas basadas en eventos MQTT
 - Dashboards de control en vivo
-- Recibir todos los campos del mensaje MQTT (data, decoded, metadata, raw)
+- Recibir todos los campos del mensaje MQTT (data, decoded, metadata)
 
 ```javascript
-// Ejemplo: Seguimiento en tiempo real desde MQTT
-const eventSource = new EventSource(
-  "/api/v1/stream?device_ids=867564050638581,DEVICE123",
+// Ejemplo: Seguimiento en tiempo real desde MQTT vía WebSocket
+const ws = new WebSocket(
+  "ws://localhost:8000/api/v1/stream?device_ids=867564050638581,DEVICE123"
 );
-eventSource.addEventListener("message", (e) => {
-  const data = JSON.parse(e.data);
-  // Actualiza la UI automáticamente con cada mensaje MQTT
-  console.log(data.data.DEVICE_ID, data.data.LATITUD, data.data.LONGITUD);
-});
+ws.onmessage = (event) => {
+  const message = JSON.parse(event.data);
+  if (message.event === "message") {
+    const data = message.data;
+    // Actualiza la UI automáticamente con cada mensaje MQTT
+    console.log(data.data.DEVICE_ID, data.data.LATITUD, data.data.LONGITUD);
+  }
+};
 ```
 
 ### 📊 Comparación Rápida
 
-| Característica  | `/communications`      | `/communications/latest` | `/api/v1/stream` (MQTT)  |
-| --------------- | ---------------------- | ------------------------ | ------------------------ |
-| Tipo            | Histórico completo     | Snapshot actual          | Tiempo real desde MQTT   |
-| Origen          | `suntech` + `queclink` | `current_state`          | Mosquitto (MQTT broker)  |
-| Datos           | Todos los registros    | Solo el más reciente     | Stream mensajes MQTT     |
-| Incluye `id`    | ✅ Sí                  | ❌ No (PK: `device_id`)  | ✅ Mensaje completo      |
-| Formato         | REST JSON              | REST JSON                | SSE (Server-Sent Events) |
-| Frecuencia      | Bajo demanda           | Bajo demanda             | Tiempo real              |
-| Rendimiento     | Lento (muchos datos)   | ⚡ Rápido (pocos datos)  | ⚡ Eventos instantáneos  |
-| Uso recomendado | Reportes, análisis     | Dashboards, mapas        | Monitoreo en tiempo real |
+| Característica  | `/communications`      | `/communications/latest` | `/api/v1/stream` (WebSocket) |
+| --------------- | ---------------------- | ------------------------ | ---------------------------- |
+| Tipo            | Histórico completo     | Snapshot actual          | Tiempo real desde MQTT       |
+| Origen          | `suntech` + `queclink` | `current_state`          | Mosquitto (MQTT broker)      |
+| Datos           | Todos los registros    | Solo el más reciente     | Stream mensajes MQTT         |
+| Incluye `id`    | ✅ Sí                  | ❌ No (PK: `device_id`)  | ✅ Mensaje completo          |
+| Formato         | REST JSON              | REST JSON                | WebSocket (JSON)             |
+| Frecuencia      | Bajo demanda           | Bajo demanda             | Tiempo real                  |
+| Rendimiento     | Lento (muchos datos)   | ⚡ Rápido (pocos datos)  | ⚡ Eventos instantáneos      |
+| Uso recomendado | Reportes, análisis     | Dashboards, mapas        | Monitoreo en tiempo real     |
 
 ---
 
 ## 🔐 Autenticación
 
-### Endpoints con JWT
+### Estado Actual
+
+> ⚠️ **Nota importante:** Actualmente **NINGÚN endpoint requiere autenticación**.
+>
+> El código de JWT existe en `app/core/security.py` con las funciones `create_access_token()`, `verify_token()` y `get_current_user()`, pero **no están activas** en ninguna ruta.
+
+### Endpoints Públicos (sin autenticación)
 
 - `GET /api/v1/communications`
 - `GET /api/v1/communications/latest`
 - `GET /api/v1/devices/{device_id}/communications`
 - `GET /api/v1/devices/{device_id}/communications/latest`
+- `WS /api/v1/stream`
+- `GET /api/v1/stream/stats`
 
-```bash
-Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
+### Endpoints con Token PASETO
+
+Los siguientes endpoints usan **tokens PASETO v4.local** (emitidos por `siscom-admin-api`) para autorización temporal:
+
+- `GET /api/v1/public/share-location/init?token=v4.local.xxx...`
+- `WS /api/v1/public/share-location/stream?token=v4.local.xxx...`
+
+Estos tokens se usan para **compartir ubicaciones públicamente** con usuarios externos sin cuenta.
+
+### Agregar Autenticación JWT (opcional)
+
+Si necesitas proteger los endpoints con JWT, agrega `Depends(get_current_user)` a las rutas:
+
+```python
+from app.core.security import get_current_user
+
+@router.get("/communications")
+async def get_communications(
+    device_ids: list[str] = Query(...),
+    db=Depends(get_db),
+    user=Depends(get_current_user),  # ← Agregar esto
+):
+    ...
 ```
 
-### Endpoints sin JWT (públicos)
+Luego el cliente debe enviar:
 
-- `GET /api/v1/stream`
-
-⚠️ **Nota:** El endpoint de stream MQTT no requiere autenticación actualmente. Ajusta según tus necesidades de seguridad.
+```bash
+Authorization: Bearer <jwt_token>
+```
 
 ---
 
@@ -624,7 +729,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 ?device_ids=867564050638581
 ```
 
-### Error 401: Token inválido
+### Error 401: Token inválido (solo si JWT está activo)
 
 ```json
 {
@@ -633,6 +738,8 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 ```
 
 **Solución:** Verifica que el token JWT sea válido y no haya expirado.
+
+> 📝 **Nota:** Este error solo ocurre si implementas autenticación JWT en las rutas.
 
 ---
 
@@ -672,12 +779,7 @@ Verás:
       deviceIds.forEach(id => params.append('device_ids', id));
 
       const response = await fetch(
-        `http://10.8.0.1:8000/api/v1/communications/latest?${params}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${$authToken}`
-          }
-        }
+        `http://10.8.0.1:8000/api/v1/communications/latest?${params}`
       );
 
       if (!response.ok) throw new Error('Error al cargar posiciones');
@@ -741,12 +843,7 @@ Verás:
       deviceIds.forEach(id => params.append('device_ids', id));
 
       const response = await fetch(
-        `http://10.8.0.1:8000/api/v1/communications?${params}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${$authToken}` // tu store de Svelte
-          }
-        }
+        `http://10.8.0.1:8000/api/v1/communications?${params}`
       );
 
       if (!response.ok) throw new Error('Error al cargar datos');
@@ -779,41 +876,61 @@ Verás:
 {/if}
 ```
 
-### 3. Stream en Tiempo Real
+### 3. Stream en Tiempo Real (WebSocket)
 
 ```svelte
 <script>
   import { onMount, onDestroy } from 'svelte';
 
   let liveData = {};
-  let eventSource;
+  let ws;
+  let connected = false;
 
   onMount(() => {
     const deviceIds = ['867564050638581', 'DEVICE123'];
-    const params = new URLSearchParams();
-    deviceIds.forEach(id => params.append('device_ids', id));
 
-    eventSource = new EventSource(
-      `http://10.8.0.1:8000/api/v1/stream?device_ids=${deviceIds.join(',')}`
+    ws = new WebSocket(
+      `ws://10.8.0.1:8000/api/v1/stream?device_ids=${deviceIds.join(',')}`
     );
 
-    eventSource.addEventListener('update', (event) => {
-      const data = JSON.parse(event.data);
-      liveData[data.device_id] = data;
-      liveData = { ...liveData }; // reactivity
-    });
+    ws.onopen = () => {
+      console.log('✅ WebSocket conectado');
+      connected = true;
+    };
 
-    eventSource.onerror = () => {
-      console.error('Error en SSE');
+    ws.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+
+      if (message.event === 'message') {
+        const data = message.data.data;
+        const deviceId = data.DEVICE_ID;
+        liveData[deviceId] = {
+          latitude: data.LATITUD,
+          longitude: data.LONGITUD,
+          speed: data.SPEED,
+          timestamp: data.GPS_DATETIME
+        };
+        liveData = { ...liveData }; // reactivity
+      }
+    };
+
+    ws.onerror = () => {
+      console.error('❌ Error en WebSocket');
+    };
+
+    ws.onclose = () => {
+      console.log('🔌 WebSocket cerrado');
+      connected = false;
     };
   });
 
   onDestroy(() => {
-    eventSource?.close();
+    ws?.close();
   });
 </script>
 
 <div>
+  <p>Estado: {connected ? '🟢 Conectado' : '🔴 Desconectado'}</p>
   {#each Object.entries(liveData) as [deviceId, data]}
     <div class="device-card">
       <h3>{deviceId}</h3>

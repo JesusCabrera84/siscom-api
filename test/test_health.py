@@ -72,7 +72,7 @@ class TestHealthEndpoint:
     def test_health_check_response_time(self, client: TestClient):
         """
         Test: Health check responde en menos de 100ms.
-        
+
         Nota: Este test es marcado como 'slow' porque mide tiempo.
         """
         import time
@@ -84,4 +84,3 @@ class TestHealthEndpoint:
         assert response.status_code == 200
         # Permitimos hasta 500ms en tests por el overhead
         assert elapsed < 500, f"Health check tomó {elapsed}ms"
-

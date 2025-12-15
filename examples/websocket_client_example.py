@@ -111,9 +111,7 @@ async def connect_to_stream(host: str, device_ids: list[str]):
 
 def main():
     """Punto de entrada del script."""
-    parser = ArgumentParser(
-        description="Cliente WebSocket de ejemplo para siscom-api"
-    )
+    parser = ArgumentParser(description="Cliente WebSocket de ejemplo para siscom-api")
     parser.add_argument(
         "--device-ids",
         "-d",
@@ -145,4 +143,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

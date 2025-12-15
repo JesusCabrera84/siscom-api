@@ -49,6 +49,7 @@ TestSessionLocal = sessionmaker(
 # Fixtures de Event Loop
 # ============================================================================
 
+
 @pytest.fixture(scope="session")
 def event_loop() -> Generator:
     """
@@ -62,6 +63,7 @@ def event_loop() -> Generator:
 # ============================================================================
 # Fixtures de Base de Datos
 # ============================================================================
+
 
 @pytest.fixture(scope="session")
 async def setup_test_database():
@@ -96,6 +98,7 @@ def override_get_db(db_session: AsyncSession):
     """
     Override de la dependencia get_db para usar la BD de test.
     """
+
     async def _get_db_override():
         yield db_session
 
@@ -105,6 +108,7 @@ def override_get_db(db_session: AsyncSession):
 # ============================================================================
 # Fixtures de Cliente HTTP
 # ============================================================================
+
 
 @pytest.fixture
 def client(override_get_db) -> Generator:
@@ -136,6 +140,7 @@ async def async_client(override_get_db) -> AsyncGenerator:
 # Fixtures de Autenticación
 # ============================================================================
 
+
 @pytest.fixture
 def valid_token() -> str:
     """
@@ -154,6 +159,7 @@ def expired_token() -> str:
     data.update({"exp": expire})
 
     from jose import jwt
+
     return jwt.encode(data, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 
@@ -176,6 +182,7 @@ def auth_headers(valid_token: str) -> dict:
 # ============================================================================
 # Fixtures de Datos de Test
 # ============================================================================
+
 
 @pytest.fixture
 async def sample_suntech_communication(db_session: AsyncSession):
@@ -288,6 +295,7 @@ async def multiple_communications(db_session: AsyncSession):
 # Fixtures de Utilidad
 # ============================================================================
 
+
 @pytest.fixture
 def mock_device_ids() -> list[str]:
     """
@@ -302,4 +310,3 @@ def sse_headers() -> dict:
     Headers para peticiones Server-Sent Events.
     """
     return {"Accept": "text/event-stream"}
-

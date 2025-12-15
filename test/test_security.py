@@ -36,9 +36,7 @@ class TestJWTToken:
 
         # Decodificar token
         payload = jwt.decode(
-            token,
-            settings.JWT_SECRET_KEY,
-            algorithms=[settings.JWT_ALGORITHM]
+            token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
         )
 
         assert payload["sub"] == "test_user"
@@ -53,9 +51,7 @@ class TestJWTToken:
         token = create_access_token(data)
 
         payload = jwt.decode(
-            token,
-            settings.JWT_SECRET_KEY,
-            algorithms=[settings.JWT_ALGORITHM]
+            token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
         )
 
         assert "exp" in payload
@@ -109,9 +105,7 @@ class TestJWTToken:
         data = {"sub": "test_user"}
         # Firmar con secret diferente
         wrong_token = jwt.encode(
-            data,
-            "wrong_secret_key",
-            algorithm=settings.JWT_ALGORITHM
+            data, "wrong_secret_key", algorithm=settings.JWT_ALGORITHM
         )
 
         with pytest.raises(HTTPException) as exc_info:
@@ -129,9 +123,7 @@ class TestJWTToken:
 
         # Firmar con algoritmo diferente
         wrong_token = jwt.encode(
-            data,
-            settings.JWT_SECRET_KEY,
-            algorithm="HS512"  # Diferente a HS256
+            data, settings.JWT_SECRET_KEY, algorithm="HS512"  # Diferente a HS256
         )
 
         with pytest.raises(HTTPException) as exc_info:
@@ -161,7 +153,7 @@ class TestTokenEdgeCases:
         data = {
             "sub": "user@example.com",
             "name": "José María O'Brien",
-            "role": "admin/moderator"
+            "role": "admin/moderator",
         }
 
         token = create_access_token(data)
@@ -177,7 +169,7 @@ class TestTokenEdgeCases:
         data = {
             "sub": "test_user",
             "permissions": ["read", "write", "delete"] * 100,
-            "metadata": {"key": "value"}
+            "metadata": {"key": "value"},
         }
 
         token = create_access_token(data)
@@ -185,4 +177,3 @@ class TestTokenEdgeCases:
 
         assert payload["sub"] == "test_user"
         assert len(payload["permissions"]) == 300
-

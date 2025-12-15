@@ -182,9 +182,7 @@ class TestModelQueries:
 
     @pytest.mark.asyncio
     async def test_query_by_device_id(
-        self,
-        db_session: AsyncSession,
-        sample_suntech_communication
+        self, db_session: AsyncSession, sample_suntech_communication
     ):
         """
         Test: Query por device_id funciona correctamente.
@@ -203,9 +201,7 @@ class TestModelQueries:
 
     @pytest.mark.asyncio
     async def test_query_multiple_device_ids(
-        self,
-        db_session: AsyncSession,
-        multiple_communications
+        self, db_session: AsyncSession, multiple_communications
     ):
         """
         Test: Query con múltiples device IDs.
@@ -223,4 +219,3 @@ class TestModelQueries:
         assert len(communications) == 2
         found_ids = {comm.device_id for comm in communications}
         assert found_ids == {"SUNTECH0", "SUNTECH1"}
-
