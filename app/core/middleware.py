@@ -25,6 +25,13 @@ class MetricsMiddleware(BaseHTTPMiddleware):
             f"User-Agent: {request.headers.get('user-agent', 'N/A')[:50]}"
         )
 
+        # Verificar si es una conexión WebSocket (upgrade request)
+        is_websocket_upgrade = request.headers.get("upgrade", "").lower() == "websocket"
+        if is_websocket_upgrade:
+            logger.debug(f"🔌 WebSocket upgrade request: {method} {path}")
+            # Para WebSocket upgrades, no aplicar métricas pero permitir la conexión
+            return await call_next(request)
+
         # Verificar si está excluida
         is_excluded = any(path.startswith(p) for p in EXCLUDED_PATHS)
 
