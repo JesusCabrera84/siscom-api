@@ -6,11 +6,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from app.api.routes import communications, public, stream
-from app.api.routes.stream import start_mqtt_broker_bridge
+from app.api.routes.stream import start_kafka_broker_bridge
 from app.core.config import settings
 from app.core.database import engine
 from app.core.middleware import MetricsMiddleware
-from app.services.mqtt_client import mqtt_client
+from app.services.kafka_client import kafka_client
 from app.utils.metrics import metrics_client
 
 # Configurar logging
@@ -38,28 +38,28 @@ async def lifespan(_app: FastAPI):
     # Startup: Conectar cliente de métricas
     await metrics_client.ensure_connected()
 
-    # Startup: Conectar cliente MQTT
+    # Startup: Conectar cliente Kafka
     try:
-        mqtt_client.connect()
-        logging.info("Cliente MQTT inicializado")
+        kafka_client.connect()
+        logging.info("Cliente Kafka inicializado")
     except Exception as e:
-        logging.error(f"Error al inicializar cliente MQTT: {e}")
+        logging.error(f"Error al inicializar cliente Kafka: {e}")
 
-    # Startup: Iniciar bridge MQTT → WebSocket Broker (alta performance)
+    # Startup: Iniciar bridge Kafka → WebSocket Broker (alta performance)
     try:
-        start_mqtt_broker_bridge()
-        logging.info("✅ Bridge MQTT → WebSocket activo")
+        start_kafka_broker_bridge()
+        logging.info("✅ Bridge Kafka → WebSocket activo")
     except Exception as e:
-        logging.error(f"Error al iniciar MQTT bridge: {e}")
+        logging.error(f"Error al iniciar Kafka bridge: {e}")
 
     yield
 
-    # Shutdown: Cerrar cliente MQTT
+    # Shutdown: Cerrar cliente Kafka
     try:
-        mqtt_client.disconnect()
-        logging.info("Cliente MQTT desconectado")
+        kafka_client.disconnect()
+        logging.info("Cliente Kafka desconectado")
     except Exception as e:
-        logging.error(f"Error al desconectar cliente MQTT: {e}")
+        logging.error(f"Error al desconectar cliente Kafka: {e}")
 
     # Shutdown: Cerrar cliente de métricas
     await metrics_client.close()

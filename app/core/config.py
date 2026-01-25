@@ -36,11 +36,15 @@ class Settings(BaseSettings):
     )
     STATSD_PREFIX: str = "siscom_api"
 
-    # MQTT Configuration
-    BROKER_HOST: str = "34.237.30.30:1883"
-    BROKER_TOPIC: str = "tracking/data"
-    MQTT_USERNAME: str = "administrator"
-    MQTT_PASSWORD: str = "ewioquiowuqpweiqouewqpDDSa4asda55"
+    # Kafka/Redpanda Configuration
+    KAFKA_BOOTSTRAP_SERVERS: str = "localhost:9092"
+    KAFKA_TOPIC: str = "tracking/data"
+    KAFKA_GROUP_ID: str = "siscom-api-consumer"
+    KAFKA_AUTO_OFFSET_RESET: str = "latest"
+    KAFKA_USERNAME: str = ""
+    KAFKA_PASSWORD: str = ""
+    KAFKA_SASL_MECHANISM: str = "SCRAM-SHA-256"
+    KAFKA_SECURITY_PROTOCOL: str = "SASL_PLAINTEXT"
 
     # Para compatibilidad con código existente que use DATABASE_URL
     @property

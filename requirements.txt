@@ -18,8 +18,8 @@ passlib[bcrypt]
 # --- Seguridad PASETO ---
 pyseto
 
-# --- MQTT Client ---
-paho-mqtt
+# --- Kafka Client ---
+kafka-python
 
 # --- Logging y utilidades ---
 loguru

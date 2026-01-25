@@ -35,11 +35,13 @@ services:
       STATSD_PORT: ${STATSD_PORT:-8126}
       STATSD_PREFIX: ${STATSD_PREFIX:-siscom_api}
 
-      # MQTT Configuration
-      BROKER_HOST: ${BROKER_HOST:-localhost:1883}
-      BROKER_TOPIC: ${BROKER_TOPIC:-#}
-      MQTT_USERNAME: ${MQTT_USERNAME}
-      MQTT_PASSWORD: ${MQTT_PASSWORD}
+      # Kafka/Redpanda Configuration
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-localhost:9092}
+      KAFKA_TOPIC: ${KAFKA_TOPIC:-tracking/data}
+      KAFKA_GROUP_ID: ${KAFKA_GROUP_ID:-siscom-api-consumer}
+      KAFKA_AUTO_OFFSET_RESET: ${KAFKA_AUTO_OFFSET_RESET:-latest}
+      KAFKA_USERNAME: ${KAFKA_USERNAME}
+      KAFKA_PASSWORD: ${KAFKA_PASSWORD}
     healthcheck:
       test:
         [

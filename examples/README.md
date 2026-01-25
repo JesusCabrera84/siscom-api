@@ -175,7 +175,7 @@ ws://localhost:8000/api/v1/stream?device_ids=0848086072
 curl http://localhost:8000/health
 
 # 2. Verificar logs del servidor
-# Debe aparecer: "✅ Bridge MQTT → WebSocket activo"
+# Debe aparecer: "✅ Bridge Kafka → WebSocket activo"
 ```
 
 ---
@@ -184,13 +184,13 @@ curl http://localhost:8000/health
 
 **Verificar:**
 
-1. **MQTT está conectado:**
+1. **Kafka está conectado:**
    - Ver logs del servidor
-   - Buscar: "Conectado exitosamente al broker MQTT"
+   - Buscar: "Conectado exitosamente a Kafka/Redpanda"
 
 2. **El device_id está publicando:**
    - Verificar que el dispositivo GPS esté enviando datos
-   - Verificar que el `DEVICE_ID` en el mensaje MQTT coincida
+   - Verificar que el `DEVICE_ID` en el mensaje Kafka coincida
 
 3. **Estadísticas del broker:**
    ```bash

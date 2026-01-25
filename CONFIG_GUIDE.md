@@ -47,20 +47,24 @@ ALLOWED_ORIGINS=*
 ALLOWED_ORIGINS=https://tudominio.com,https://app.tudominio.com
 ```
 
-## MQTT Configuration
+## Kafka/Redpanda Configuration
 
 ```env
-BROKER_HOST=34.237.30.30:1883
-BROKER_TOPIC=tracking/data
-MQTT_USERNAME=tu_usuario_mqtt
-MQTT_PASSWORD=tu_password_mqtt
+KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+KAFKA_TOPIC=tracking/data
+KAFKA_GROUP_ID=siscom-api-consumer
+KAFKA_AUTO_OFFSET_RESET=latest
+KAFKA_USERNAME=tu_usuario_kafka
+KAFKA_PASSWORD=tu_password_kafka
 ```
 
-### Notas sobre MQTT:
+### Notas sobre Kafka/Redpanda:
 
-- `BROKER_HOST`: Puede incluir el puerto (ej: `host:1883`) o solo el host (por defecto usa puerto 1883)
-- `BROKER_TOPIC`: Topic al que te suscribirás
-- Las credenciales son **opcionales** si tu broker no requiere autenticación
+- `KAFKA_BOOTSTRAP_SERVERS`: Lista de servidores bootstrap separados por comas (ej: `host1:9092,host2:9092`)
+- `KAFKA_TOPIC`: Topic al que te suscribirás
+- `KAFKA_GROUP_ID`: Identificador del consumer group
+- `KAFKA_AUTO_OFFSET_RESET`: Posición inicial de lectura (`latest` o `earliest`)
+- Las credenciales son **opcionales** si tu cluster no requiere autenticación
 
 ## StatsD/Telegraf (Métricas - OPCIONAL)
 
@@ -136,11 +140,13 @@ STATSD_HOST=localhost
 STATSD_PORT=8126
 STATSD_PREFIX=siscom_api
 
-# MQTT
-BROKER_HOST=34.237.30.30:1883
-BROKER_TOPIC=tracking/data
-MQTT_USERNAME=administrator
-MQTT_PASSWORD=tu_password_mqtt
+# Kafka/Redpanda
+KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+KAFKA_TOPIC=tracking/data
+KAFKA_GROUP_ID=siscom-api-consumer
+KAFKA_AUTO_OFFSET_RESET=latest
+KAFKA_USERNAME=tu_usuario_kafka
+KAFKA_PASSWORD=tu_password_kafka
 ```
 
 ## Valores por Defecto
@@ -153,8 +159,10 @@ Si no especificas alguna variable en `.env`, se usarán estos valores por defect
 | `STATSD_HOST`                 | `localhost`       |
 | `STATSD_PORT`                 | `8126`            |
 | `STATSD_PREFIX`               | `siscom_api`      |
-| `BROKER_HOST`                 | `localhost:1883`  |
-| `BROKER_TOPIC`                | `#`               |
+| `KAFKA_BOOTSTRAP_SERVERS`     | `localhost:9092`  |
+| `KAFKA_TOPIC`                  | `tracking/data`   |
+| `KAFKA_GROUP_ID`               | `siscom-api-consumer` |
+| `KAFKA_AUTO_OFFSET_RESET`      | `latest`          |
 | `ALLOWED_ORIGINS`             | `*`               |
 | `JWT_ALGORITHM`               | `HS256`           |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | `60`              |

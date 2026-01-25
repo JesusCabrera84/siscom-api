@@ -6,7 +6,7 @@ Sistema de streaming WebSocket de **alta performance**, diseñado para escalar a
 
 ### ✅ Características Principales
 
-- **Alta escalabilidad**: Un único consumer MQTT para todas las conexiones
+- **Alta escalabilidad**: Un único consumer Kafka/Redpanda para todas las conexiones
 - **Full-duplex**: Comunicación bidireccional (WebSocket)
 - **Backpressure automático**: Control de flujo cuando clientes son lentos
 - **Sin buffering**: Sin problemas con ALB/nginx
@@ -19,14 +19,14 @@ Sistema de streaming WebSocket de **alta performance**, diseñado para escalar a
 
 ```
                     ┌─────────────────────┐
-                    │   MQTT Broker       │
+                    │ Kafka/Redpanda      │
                     │   (Mosquitto)       │
                     └──────────┬──────────┘
                                │
-                               │ paho-mqtt
+                               │ kafka-python
                                │
                     ┌──────────▼──────────────┐
-                    │   MQTTClient            │
+                    │   KafkaClient           │
                     │   ✅ 1 consumer único   │
                     │   ✅ Callbacks system   │
                     └──────────┬──────────────┘
@@ -50,9 +50,9 @@ Sistema de streaming WebSocket de **alta performance**, diseñado para escalar a
 
 ### Flujo de Mensajes
 
-1. **MQTT** recibe mensaje → decodifica JSON
-2. **mqtt_client** ejecuta callbacks registrados (thread-safe)
-3. **mqtt_message_handler** recibe mensaje vía callback
+1. **Kafka/Redpanda** recibe mensaje → decodifica JSON
+2. **kafka_client** ejecuta callbacks registrados (thread-safe)
+3. **kafka_message_handler** recibe mensaje vía callback
 4. **WebSocketBroker** distribuye solo a colas con ese device_id
 5. **WebSocket connections** reciben y envían al cliente
 
@@ -212,7 +212,7 @@ GET /api/v1/stream/stats
 
 | Métrica                    | Descripción                                           |
 |----------------------------|-------------------------------------------------------|
-| `total_messages_processed` | Total de mensajes MQTT procesados desde el inicio     |
+| `total_messages_processed` | Total de mensajes Kafka/Redpanda procesados desde el inicio |
 | `active_subscribers`       | Número de suscripciones activas (colas)               |
 | `devices_being_monitored`  | Número de device_ids únicos con subscribers activos   |
 
@@ -293,7 +293,7 @@ Si un cliente WebSocket es muy lento y su cola se llena:
 **Solución si ocurre frecuentemente:**
 - Aumentar `maxsize` en `WebSocketBroker.subscribe()`
 - Optimizar el cliente para procesar mensajes más rápido
-- Reducir la frecuencia de mensajes MQTT
+- Reducir la frecuencia de mensajes Kafka/Redpanda
 
 ---
 

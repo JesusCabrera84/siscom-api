@@ -20,7 +20,7 @@ Los endpoints han sido migrados a seguir las **mejores prácticas REST**:
 | `GET /api/v1/communications/latest`                     | GET    | ❌ No  | Última comunicación de múltiples devices                 |
 | `GET /api/v1/devices/{device_id}/communications`        | GET    | ❌ No  | Histórico de un dispositivo (soporta `?received_at=`)    |
 | `GET /api/v1/devices/{device_id}/communications/latest` | GET    | ❌ No  | Última comunicación de un solo dispositivo               |
-| `WS /api/v1/stream`                                     | WS     | ❌ No  | WebSocket en tiempo real desde MQTT                      |
+| `WS /api/v1/stream`                                     | WS     | ❌ No  | WebSocket en tiempo real desde Kafka/Redpanda           |
 | `GET /api/v1/stream/stats`                              | GET    | ❌ No  | Estadísticas del broker WebSocket                        |
 | `GET /health`                                           | GET    | ❌ No  | Health check del servicio                                |
 
@@ -297,7 +297,7 @@ const data = await response.json();
 
 - `GET /communications` → Retorna TODO el histórico (puede ser miles de registros)
 - `GET /communications/latest` → Retorna SOLO la última comunicación de cada dispositivo
-- `WS /api/v1/stream` → Conexión WebSocket con actualizaciones en tiempo real desde MQTT
+- `WS /api/v1/stream` → Conexión WebSocket con actualizaciones en tiempo real desde Kafka/Redpanda
 
 **🎯 Caso de uso:** Ideal para dashboards que necesitan mostrar la posición/estado actual de múltiples dispositivos en un mapa sin cargar todo el histórico.
 
@@ -377,7 +377,7 @@ const data = await response.json();
 
 - `GET /devices/{id}/communications` → Retorna TODO el histórico del dispositivo
 - `GET /devices/{id}/communications/latest` → Retorna SOLO la última comunicación
-- `WS /api/v1/stream?device_ids={id}` → WebSocket en tiempo real desde MQTT
+- `WS /api/v1/stream?device_ids={id}` → WebSocket en tiempo real desde Kafka/Redpanda
 
 **🎯 Caso de uso:** Ideal para consultar rápidamente el estado actual de un dispositivo específico (última posición, batería, velocidad, etc.).
 
@@ -385,9 +385,9 @@ const data = await response.json();
 
 ### 5️⃣ WS /api/v1/stream (WebSocket)
 
-Stream WebSocket en tiempo real desde MQTT (Mosquitto)
+Stream WebSocket en tiempo real desde Kafka/Redpanda
 
-**⚡ Este endpoint consume mensajes en tiempo real desde el broker MQTT y los transmite vía WebSocket.**
+**⚡ Este endpoint consume mensajes en tiempo real desde Kafka/Redpanda y los transmite vía WebSocket.**
 
 #### URL de Conexión
 
@@ -421,7 +421,7 @@ ws.onmessage = (event) => {
 
   if (message.event === "message") {
     // Datos del dispositivo
-    console.log("📡 Evento MQTT recibido:", message.data);
+    console.log("📡 Evento Kafka recibido:", message.data);
     // Estructura:
     // {
     //   "event": "message",
@@ -484,7 +484,7 @@ ws.onclose = (event) => {
 
 #### Características
 
-- ✅ **Tiempo Real**: Consume mensajes directamente de Mosquitto MQTT
+- ✅ **Tiempo Real**: Consume mensajes directamente de Kafka/Redpanda
 - ✅ **WebSocket**: Full-duplex, sin problemas de buffering en ALB/nginx
 - ✅ **Filtrado Obligatorio**: Requiere especificar `device_ids`
 - ✅ **Keep-alive**: Envía eventos `ping` cada 60 segundos
@@ -558,7 +558,7 @@ curl 'http://10.8.0.1:8000/api/v1/communications?device_ids=867564050638581'
   │           └── latest/     → última comunicación del dispositivo
   │
   ├── stream/                      (WebSocket tiempo real)
-  │   ├── WS          → WebSocket desde MQTT (requiere: ?device_ids=X,Y)
+  │   ├── WS          → WebSocket desde Kafka/Redpanda (requiere: ?device_ids=X,Y)
   │   └── stats/      → estadísticas del broker
   │
   └── public/share-location/       (enlaces públicos con PASETO)
@@ -623,7 +623,7 @@ const currentPositions = await fetch(
 
 - Monitoreo en vivo/tiempo real desde Mosquitto
 - Seguimiento activo de vehículos en operación
-- Alertas instantáneas basadas en eventos MQTT
+- Alertas instantáneas basadas en eventos Kafka/Redpanda
 - Dashboards de control en vivo
 - Recibir todos los campos del mensaje MQTT (data, decoded, metadata)
 

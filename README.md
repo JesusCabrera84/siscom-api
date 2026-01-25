@@ -8,7 +8,7 @@ API FastAPI para gestión de comunicaciones de dispositivos GPS (Suntech y Quecl
 - ✅ PostgreSQL con SQLAlchemy async
 - ✅ Autenticación JWT
 - ✅ Server-Sent Events (SSE) para streaming
-- ✅ Integración MQTT con Mosquitto para eventos en tiempo real
+- ✅ Integración Kafka/Redpanda para eventos en tiempo real
 - ✅ Pool de conexiones optimizado
 - ✅ Health checks
 - ✅ CORS configurable
@@ -84,11 +84,13 @@ STATSD_HOST=localhost
 STATSD_PORT=8126
 STATSD_PREFIX=siscom_api
 
-# MQTT Configuration
-BROKER_HOST=localhost:1883
-BROKER_TOPIC=#
-MQTT_USERNAME=mqtt_user
-MQTT_PASSWORD=mqtt_password
+# Kafka/Redpanda Configuration
+KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+KAFKA_TOPIC=tracking/data
+KAFKA_GROUP_ID=siscom-api-consumer
+KAFKA_AUTO_OFFSET_RESET=latest
+KAFKA_USERNAME=kafka_user
+KAFKA_PASSWORD=kafka_password
 ```
 
 ### 5. Ejecutar la aplicación
@@ -262,7 +264,7 @@ docker compose up -d
 | **[📊 Métricas](docs/METRICS.md)**                  | Sistema de métricas StatsD/Telegraf/InfluxDB            |
 | **[📈 Queries Grafana](docs/GRAFANA_QUERIES.md)**   | Dashboards y queries para visualizar métricas           |
 | **[🚀 Deployment](docs/DEPLOYMENT.md)**             | Guía de despliegue en EC2 con GitHub Actions            |
-| **[🔌 MQTT Integration](docs/MQTT_INTEGRATION.md)** | Integración con Mosquitto para streaming en tiempo real |
+| **[🔌 Kafka Integration](docs/KAFKA_INTEGRATION.md)** | Integración con Kafka/Redpanda para streaming en tiempo real |
 | **[📖 Swagger UI](http://localhost:8000/api/docs)** | Documentación interactiva (servidor corriendo)          |
 
 ### Endpoints REST v1
@@ -287,7 +289,7 @@ GET /api/v1/devices/{device_id}/communications
 Authorization: Bearer {token}
 ```
 
-#### Stream SSE - Eventos en Tiempo Real (MQTT)
+#### Stream SSE - Eventos en Tiempo Real (Kafka/Redpanda)
 
 Endpoint de streaming que consume mensajes de Mosquitto y los transmite vía Server-Sent Events:
 
@@ -307,7 +309,7 @@ Accept: text/event-stream
 curl -N "http://localhost:8000/api/v1/stream?device_ids=0848086072"
 ```
 
-Ver [MQTT_INTEGRATION.md](docs/MQTT_INTEGRATION.md) para más detalles sobre la integración MQTT.
+Ver [KAFKA_INTEGRATION.md](docs/KAFKA_INTEGRATION.md) para más detalles sobre la integración Kafka/Redpanda.
 
 ### Tabla de Endpoints
 
@@ -316,7 +318,7 @@ Ver [MQTT_INTEGRATION.md](docs/MQTT_INTEGRATION.md) para más detalles sobre la 
 | `GET /health`                                    | GET    | ❌ No  | Health check del servicio            |
 | `GET /api/v1/communications`                     | GET    | ✅ JWT | Histórico de múltiples dispositivos  |
 | `GET /api/v1/devices/{device_id}/communications` | GET    | ✅ JWT | Histórico de un solo dispositivo     |
-| `GET /api/v1/stream`                             | GET    | ❌ No  | Stream SSE con mensajes MQTT         |
+| `GET /api/v1/stream`                             | GET    | ❌ No  | Stream SSE con mensajes Kafka/Redpanda |
 | `GET /api/v1/stream?device_ids={ids}`            | GET    | ❌ No  | Stream SSE filtrado por dispositivos |
 
 ## 🏗️ Arquitectura
@@ -334,7 +336,7 @@ siscom-api/
 │   ├── models/              # Modelos SQLAlchemy
 │   ├── schemas/             # Schemas Pydantic
 │   ├── services/
-│   │   ├── mqtt_client.py   # Cliente MQTT para Mosquitto
+│   │   ├── kafka_client.py   # Cliente Kafka/Redpanda
 │   │   ├── repository.py    # Repositorio de datos
 │   │   └── sse.py           # Lógica SSE (opcional)
 │   ├── utils/
@@ -348,7 +350,7 @@ siscom-api/
 │   ├── METRICS.md           # 📊 Sistema de métricas
 │   ├── GRAFANA_QUERIES.md   # 📈 Queries y dashboards
 │   ├── DEPLOYMENT.md        # 🚀 Guía de deployment
-│   └── MQTT_INTEGRATION.md  # 🔌 Integración MQTT/Mosquitto
+│   └── KAFKA_INTEGRATION.md  # 🔌 Integración Kafka/Redpanda
 ├── test/                    # Tests unitarios e integración
 ├── scripts/                 # Scripts de utilidad
 ├── .github/

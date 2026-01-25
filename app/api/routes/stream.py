@@ -4,7 +4,7 @@ from contextlib import suppress
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
-from app.services.mqtt_client import mqtt_client
+from app.services.kafka_client import kafka_client
 from app.utils.metrics import metrics_client
 
 logger = logging.getLogger(__name__)
@@ -19,10 +19,10 @@ router = APIRouter(prefix="/api/v1", tags=["Stream"])
 
 class WebSocketBroker:
     """
-    Broker interno para distribuir mensajes MQTT a múltiples conexiones WebSocket.
+    Broker interno para distribuir mensajes Kafka/Redpanda a múltiples conexiones WebSocket.
 
     Arquitectura:
-    - Un único consumer MQTT global
+    - Un único consumer Kafka global
     - Cada WebSocket se suscribe a device_ids específicos
     - Los mensajes se distribuyen solo a los WebSockets interesados
     - Usa asyncio.Queue para comunicación lock-free y alta performance
@@ -91,10 +91,10 @@ class WebSocketBroker:
 
     async def publish(self, message: dict):
         """
-        Publica un mensaje MQTT a todos los WebSockets suscritos al device_id.
+        Publica un mensaje Kafka/Redpanda a todos los WebSockets suscritos al device_id.
 
         Args:
-            message: Mensaje MQTT completo con estructura {"data": {"DEVICE_ID": "..."}}
+            message: Mensaje Kafka/Redpanda completo con estructura {"data": {"DEVICE_ID": "..."}}
         """
         dev = message.get("data", {}).get("DEVICE_ID")
         if not dev:
@@ -147,15 +147,15 @@ ws_broker = WebSocketBroker()
 
 
 # ============================================================================
-# MQTT Listener - Conecta MQTT → WebSocket Broker
+# Kafka Listener - Conecta Kafka/Redpanda → WebSocket Broker
 # ============================================================================
 
 
-async def mqtt_message_handler(message: dict):
+async def kafka_message_handler(message: dict):
     """
-    Handler que recibe mensajes MQTT y los publica al broker interno.
+    Handler que recibe mensajes Kafka/Redpanda y los publica al broker interno.
 
-    Esta función se registra como callback en mqtt_client para recibir
+    Esta función se registra como callback en kafka_client para recibir
     mensajes en tiempo real sin consumir de una cola.
     """
     try:
@@ -164,18 +164,18 @@ async def mqtt_message_handler(message: dict):
         logger.error(f"Error al publicar mensaje al broker: {e}", exc_info=True)
 
 
-def start_mqtt_broker_bridge():
+def start_kafka_broker_bridge():
     """
-    Inicia el puente entre MQTT y el WebSocket Broker.
+    Inicia el puente entre Kafka/Redpanda y el WebSocket Broker.
 
-    Registra el callback para que cada mensaje MQTT se publique
+    Registra el callback para que cada mensaje Kafka se publique
     automáticamente al broker interno. Esta es la arquitectura
-    de alta performance: un solo flujo MQTT → muchos WebSockets.
+    de alta performance: un solo flujo Kafka → muchos WebSockets.
 
     DEBE llamarse en el startup de la aplicación.
     """
-    mqtt_client.register_message_callback(mqtt_message_handler)
-    logger.info("✅ MQTT → WebSocket Broker bridge iniciado")
+    kafka_client.register_message_callback(kafka_message_handler)
+    logger.info("✅ Kafka → WebSocket Broker bridge iniciado")
 
 
 # ============================================================================
