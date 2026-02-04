@@ -1,3 +1,5 @@
+import asyncio
+import contextlib
 import logging
 from contextlib import asynccontextmanager
 
@@ -52,7 +54,24 @@ async def lifespan(_app: FastAPI):
     except Exception as e:
         logging.error(f"Error al iniciar Kafka bridge: {e}")
 
+    # Tarea periódica para reportar el estado del circuit breaker de Kafka como métrica
+    async def report_kafka_circuit_breaker():
+        while True:
+            await metrics_client.kafka_circuit_breaker_gauge(
+                kafka_client.circuit_breaker_status()["open"]
+            )
+            await asyncio.sleep(10)
+
+    task = None
+    if settings.STATSD_ENABLED:
+        task = asyncio.create_task(report_kafka_circuit_breaker())
+
     yield
+
+    if task:
+        task.cancel()
+        with contextlib.suppress(Exception):
+            await task
 
     # Shutdown: Cerrar cliente Kafka
     try:
@@ -88,12 +107,16 @@ app.add_middleware(
 
 
 # Health check endpoint
+
+
 @app.get("/health", tags=["Health"])
 async def health_check():
+    kafka_status = kafka_client.circuit_breaker_status()
     return {
-        "status": "healthy",
+        "status": "healthy" if not kafka_status["open"] else "degraded",
         "service": settings.APP_NAME,
         "version": settings.APP_VERSION,
+        "kafka_circuit_breaker": kafka_status,
     }
 
 

@@ -1,3 +1,5 @@
+# Para soporte de compresión Kafka
+lz4
 # --- Core FastAPI stack ---
 fastapi
 uvicorn[standard]

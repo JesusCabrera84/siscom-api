@@ -6,6 +6,10 @@ class Settings(BaseSettings):
     APP_NAME: str = "siscom-api"
     APP_VERSION: str = "0.1.0"
 
+    # Circuit Breaker/Retry para Kafka
+    KAFKA_MAX_RETRIES: int = 5
+    KAFKA_CIRCUIT_BREAKER_COOLDOWN: int = 300
+
     # Configuración de Base de Datos
     DB_HOST: str = "localhost"
     DB_PORT: int = 5432

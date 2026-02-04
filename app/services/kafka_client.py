@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import threading
+from datetime import UTC, datetime
 
 from kafka import KafkaConsumer
 
@@ -20,8 +21,13 @@ class KafkaClient:
         self._reconnect_attempts = 0
         self._running = False
         self._consumer_thread: threading.Thread | None = None
-        # Sistema de callbacks para WebSocket Broker (alta performance)
         self._message_callbacks: list = []
+
+        # Circuit breaker
+        self.max_retries = settings.KAFKA_MAX_RETRIES
+        self.circuit_breaker_cooldown = settings.KAFKA_CIRCUIT_BREAKER_COOLDOWN
+        self._circuit_open = False
+        self._circuit_opened_at = None
 
     def _create_consumer(self) -> KafkaConsumer:
         """Crear una nueva instancia del consumidor Kafka."""
@@ -48,7 +54,9 @@ class KafkaClient:
                     "sasl_plain_password": settings.KAFKA_PASSWORD,
                 }
             )
-            logger.info(f"Autenticación SASL Kafka configurada: {settings.KAFKA_SASL_MECHANISM} con protocolo {settings.KAFKA_SECURITY_PROTOCOL}")
+            logger.info(
+                f"Autenticación SASL Kafka configurada: {settings.KAFKA_SASL_MECHANISM} con protocolo {settings.KAFKA_SECURITY_PROTOCOL}"
+            )
 
         return KafkaConsumer(settings.KAFKA_TOPIC, **consumer_config)
 
@@ -77,10 +85,35 @@ class KafkaClient:
             logger.error(f"Error al procesar mensaje Kafka: {e}")
 
     def _handle_consumer_error(self, error):
-        """Maneja errores del consumer Kafka."""
-        logger.error(f"Error en el loop de consumo Kafka: {error}")
+        """Maneja errores del consumer Kafka con circuit breaker."""
         self.connected = False
+        if self._circuit_open:
+            # Circuito abierto, no intentar reconexión
+            cooldown_left = self._circuit_breaker_cooldown_remaining()
+            if cooldown_left > 0:
+                logger.debug(
+                    f"Circuit breaker abierto, cooldown restante: {cooldown_left:.1f}s"
+                )
+                return
+            else:
+                # Cooldown terminado, cerrar circuito
+                self._circuit_open = False
+                self._reconnect_attempts = 0
+                logger.warning(
+                    "Circuit breaker cerrado, reintentando conexión a Kafka..."
+                )
+
+        logger.error(f"Error en el loop de consumo Kafka: {error}")
         self._reconnect_attempts += 1
+
+        if self._reconnect_attempts > self.max_retries:
+            if not self._circuit_open:
+                self._circuit_open = True
+                self._circuit_opened_at = datetime.now(UTC)
+                logger.critical(
+                    f"Circuit breaker activado tras {self.max_retries} reintentos fallidos. No se intentará reconectar hasta pasar el cooldown de {self.circuit_breaker_cooldown}s."
+                )
+            return
 
         if not self._running:
             return
@@ -93,6 +126,12 @@ class KafkaClient:
             self._reconnect()
         else:
             logger.error("Event loop no disponible para reconexión")
+
+    def _circuit_breaker_cooldown_remaining(self):
+        if not self._circuit_opened_at:
+            return 0
+        elapsed = (datetime.now(UTC) - self._circuit_opened_at).total_seconds()
+        return max(0, self.circuit_breaker_cooldown - elapsed)
 
     def _consume_messages(self):
         """Thread worker para consumir mensajes de Kafka."""
@@ -120,6 +159,19 @@ class KafkaClient:
 
     def _reconnect(self):
         """Intentar reconectar el consumidor Kafka."""
+        if self._circuit_open:
+            cooldown_left = self._circuit_breaker_cooldown_remaining()
+            if cooldown_left > 0:
+                logger.warning(
+                    f"Circuit breaker activo, esperando {cooldown_left:.1f}s antes de reintentar conexión a Kafka."
+                )
+                return
+            else:
+                self._circuit_open = False
+                self._reconnect_attempts = 0
+                logger.warning(
+                    "Circuit breaker cerrado, reintentando conexión a Kafka..."
+                )
         try:
             if self.consumer:
                 self.consumer.close()
@@ -131,6 +183,8 @@ class KafkaClient:
 
             self.connected = True
             self._reconnect_attempts = 0
+            self._circuit_open = False
+            self._circuit_opened_at = None
             logger.info(
                 f"Conectado exitosamente a Kafka/Redpanda {settings.KAFKA_BOOTSTRAP_SERVERS}"
             )
@@ -138,6 +192,17 @@ class KafkaClient:
         except Exception as e:
             logger.error(f"Error al reconectar consumidor Kafka: {e}")
             self.connected = False
+
+    def circuit_breaker_status(self):
+        """Devuelve el estado del circuit breaker para healthcheck y métricas."""
+        return {
+            "open": self._circuit_open,
+            "cooldown_remaining": (
+                self._circuit_breaker_cooldown_remaining() if self._circuit_open else 0
+            ),
+            "retries": self._reconnect_attempts,
+            "max_retries": self.max_retries,
+        }
 
     def connect(self):
         """Inicializar y conectar el cliente Kafka."""

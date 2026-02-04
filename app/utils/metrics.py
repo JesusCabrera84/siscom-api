@@ -122,6 +122,20 @@ class MetricsClient:
         except Exception as e:
             logger.debug(f"Error en métricas (decrement SSE): {e}")
 
+    async def kafka_circuit_breaker_gauge(self, open: bool):
+        """Reporta el estado del circuit breaker de Kafka como gauge (1=open, 0=closed)."""
+        if not self._enabled:
+            return
+        try:
+            await self.ensure_connected()
+            if not self.client:
+                return
+            self.client.gauge(
+                f"{self.prefix}.kafka_circuit_breaker_open", 1 if open else 0
+            )
+        except Exception as e:
+            logger.debug(f"Error en métricas (kafka circuit breaker): {e}")
+
 
 metrics_client = MetricsClient()
 
