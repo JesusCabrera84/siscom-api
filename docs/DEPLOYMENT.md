@@ -18,6 +18,9 @@ Esta guía cubre el despliegue de SISCOM API v1 (REST) en EC2 usando GitHub Acti
    - `EC2_SSH_PORT`: Puerto SSH del EC2 (usualmente 22)
    - `EC2_USERNAME`: Usuario para SSH (ej: ubuntu, ec2-user)
    - `JWT_SECRET_KEY`: Clave secreta para JWT
+   - `PASETO_SECRET_KEY`: Clave secreta para PASETO
+   - `KAFKA_USERNAME`: Usuario de Kafka (si usa autenticación)
+   - `KAFKA_PASSWORD`: Contraseña de Kafka (si usa autenticación)
    - `DOCKER_USERNAME`: (Opcional) Usuario de Docker Hub
    - `DOCKER_PASSWORD`: (Opcional) Token de Docker Hub
 
@@ -30,6 +33,15 @@ Esta guía cubre el despliegue de SISCOM API v1 (REST) en EC2 usando GitHub Acti
    - `DB_MIN_CONNECTIONS`: Conexiones mínimas (ej: 10)
    - `DB_PORT`: Puerto de la base de datos (ej: 5432)
    - `DB_USERNAME`: Usuario de la base de datos
+   - `KAFKA_BOOTSTRAP_SERVERS`: Servidores bootstrap de Kafka (ej: localhost:9092)
+   - `KAFKA_TOPIC`: Topic de Kafka (ej: siscom-minimal)
+   - `KAFKA_GROUP_ID`: Group ID del consumidor (ej: siscom-api-consumer)
+   - `KAFKA_AUTO_OFFSET_RESET`: Offset reset (latest o earliest)
+   - `KAFKA_SASL_MECHANISM`: Mecanismo SASL (ej: SCRAM-SHA-256)
+   - `KAFKA_SECURITY_PROTOCOL`: Protocolo de seguridad (ej: SASL_PLAINTEXT)
+   - `STATSD_HOST`: Host de StatsD/Telegraf (opcional)
+   - `STATSD_PORT`: Puerto de StatsD/Telegraf (opcional)
+   - `STATSD_PREFIX`: Prefijo de métricas (opcional)
 
 ## Configuración de Secrets en GitHub
 

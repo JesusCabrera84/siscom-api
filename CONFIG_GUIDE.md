@@ -56,6 +56,12 @@ KAFKA_GROUP_ID=siscom-api-consumer
 KAFKA_AUTO_OFFSET_RESET=latest
 KAFKA_USERNAME=tu_usuario_kafka
 KAFKA_PASSWORD=tu_password_kafka
+KAFKA_SASL_MECHANISM=SCRAM-SHA-256
+KAFKA_SECURITY_PROTOCOL=SASL_PLAINTEXT
+
+# Circuit Breaker / Resiliencia
+KAFKA_MAX_RETRIES=5
+KAFKA_CIRCUIT_BREAKER_COOLDOWN=300
 ```
 
 ### Notas sobre Kafka/Redpanda:
@@ -65,6 +71,16 @@ KAFKA_PASSWORD=tu_password_kafka
 - `KAFKA_GROUP_ID`: Identificador del consumer group
 - `KAFKA_AUTO_OFFSET_RESET`: Posición inicial de lectura (`latest` o `earliest`)
 - Las credenciales son **opcionales** si tu cluster no requiere autenticación
+- `KAFKA_SASL_MECHANISM`: Mecanismo de autenticación SASL (ej: SCRAM-SHA-256, PLAIN)
+- `KAFKA_SECURITY_PROTOCOL`: Protocolo de seguridad (SASL_PLAINTEXT, SASL_SSL, etc.)
+
+### Circuit Breaker:
+
+- `KAFKA_MAX_RETRIES`: Número máximo de reintentos antes de abrir el circuito (default: 5)
+- `KAFKA_CIRCUIT_BREAKER_COOLDOWN`: Tiempo en segundos que el circuito permanece abierto antes de reintentar (default: 300)
+- El circuit breaker previene loops infinitos de reconexión cuando Kafka no está disponible
+- Durante el cooldown, no se intentan reconexiones, reduciendo spam de logs
+- El estado del circuito se expone en `/health` y como métrica
 
 ## StatsD/Telegraf (Métricas - OPCIONAL)
 

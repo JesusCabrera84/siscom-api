@@ -16,6 +16,12 @@ KAFKA_GROUP_ID=<group_id>                         # Ejemplo: siscom-api-consumer
 KAFKA_AUTO_OFFSET_RESET=<offset_reset>            # Ejemplo: latest o earliest
 KAFKA_USERNAME=<usuario>                          # Usuario del cluster Kafka (opcional)
 KAFKA_PASSWORD=<contraseña>                        # Contraseña del cluster Kafka (opcional)
+KAFKA_SASL_MECHANISM=SCRAM-SHA-256                # Mecanismo SASL (opcional)
+KAFKA_SECURITY_PROTOCOL=SASL_PLAINTEXT            # Protocolo de seguridad (opcional)
+
+# Circuit Breaker / Resiliencia
+KAFKA_MAX_RETRIES=5                               # Reintentos máximos antes de abrir circuito
+KAFKA_CIRCUIT_BREAKER_COOLDOWN=300                # Cooldown en segundos cuando el circuito está abierto
 ```
 
 ### Docker Compose
@@ -51,6 +57,14 @@ Las variables Kafka ya están configuradas en `docker-compose.yml` y se cargan a
    - Inicializa el cliente Kafka al iniciar la aplicación
    - Maneja errores de conexión sin detener la aplicación
    - Desconecta el cliente Kafka al cerrar la aplicación
+
+4. **Circuit Breaker** (resiliencia):
+   - Previene reintentos infinitos cuando Kafka no está disponible
+   - Tras `KAFKA_MAX_RETRIES` fallos consecutivos, el circuito se abre
+   - Durante el periodo de cooldown (`KAFKA_CIRCUIT_BREAKER_COOLDOWN`), no se intentan reconexiones
+   - Reduce spam de logs y carga del sistema cuando Kafka está caído
+   - El estado del circuito se expone en el endpoint `/health`
+   - Se reporta como métrica `kafka_circuit_breaker_open` (1=abierto, 0=cerrado)
 
 ## Formato de Mensaje
 
@@ -130,9 +144,14 @@ eventSource.onclose = (event) => {
 El cliente Kafka maneja errores de manera resiliente:
 
 1. **Error de Conexión**: Si no puede conectarse al cluster, registra el error pero no detiene la aplicación
-2. **Desconexión Inesperada**: Intenta reconectar automáticamente con backoff exponencial
-3. **Mensajes Malformados**: Registra el error y continúa procesando otros mensajes
-4. **Cliente No Conectado**: El stream WebSocket espera hasta que el cliente Kafka se conecte
+2. **Desconexión Inesperada**: Intenta reconectar automáticamente con backoff exponencial (máximo 30 segundos)
+3. **Circuit Breaker**: Tras `KAFKA_MAX_RETRIES` (default: 5) fallos consecutivos:
+   - El circuito se abre y se detienen los reintentos
+   - Se registra un log crítico único (evita spam)
+   - Después del cooldown (`KAFKA_CIRCUIT_BREAKER_COOLDOWN`, default: 300s), el circuito se cierra y se reintenta
+4. **Mensajes Malformados**: Registra el error y continúa procesando otros mensajes
+5. **Cliente No Conectado**: El stream WebSocket espera hasta que el cliente Kafka se conecte
+6. **Compresión lz4**: La librería `lz4` está instalada para soportar mensajes comprimidos con codec lz4
 
 ## Logs
 

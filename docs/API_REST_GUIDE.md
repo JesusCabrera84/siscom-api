@@ -22,7 +22,7 @@ Los endpoints han sido migrados a seguir las **mejores prácticas REST**:
 | `GET /api/v1/devices/{device_id}/communications/latest` | GET    | ❌ No  | Última comunicación de un solo dispositivo               |
 | `WS /api/v1/stream`                                     | WS     | ❌ No  | WebSocket en tiempo real desde Kafka/Redpanda           |
 | `GET /api/v1/stream/stats`                              | GET    | ❌ No  | Estadísticas del broker WebSocket                        |
-| `GET /health`                                           | GET    | ❌ No  | Health check del servicio                                |
+| `GET /health`                                           | GET    | ❌ No  | Health check del servicio (incluye estado circuit breaker Kafka) |
 
 > ⚠️ **Nota:** Actualmente ningún endpoint requiere autenticación. El código de JWT existe en `app/core/security.py` pero no está activo en las rutas.
 
@@ -704,6 +704,64 @@ Luego el cliente debe enviar:
 ```bash
 Authorization: Bearer <jwt_token>
 ```
+
+---
+
+## 🏥 Health Check
+
+### GET /health
+
+Endpoint de health check que incluye el estado del circuit breaker de Kafka.
+
+#### Request
+
+```bash
+curl http://localhost:8000/health
+```
+
+#### Response (200 OK) - Sistema Saludable
+
+```json
+{
+  "status": "healthy",
+  "service": "siscom-api",
+  "version": "0.1.0",
+  "kafka_circuit_breaker": {
+    "open": false,
+    "cooldown_remaining": 0,
+    "retries": 0,
+    "max_retries": 5
+  }
+}
+```
+
+#### Response (200 OK) - Sistema Degradado (Circuit Breaker Abierto)
+
+```json
+{
+  "status": "degraded",
+  "service": "siscom-api",
+  "version": "0.1.0",
+  "kafka_circuit_breaker": {
+    "open": true,
+    "cooldown_remaining": 245.3,
+    "retries": 5,
+    "max_retries": 5
+  }
+}
+```
+
+**Campos del Circuit Breaker:**
+- `open`: `true` si el circuito está abierto (Kafka no disponible), `false` si está operando normalmente
+- `cooldown_remaining`: Segundos restantes antes de reintentar conexión (0 si el circuito está cerrado)
+- `retries`: Número de reintentos fallidos consecutivos
+- `max_retries`: Límite de reintentos antes de abrir el circuito (configurable con `KAFKA_MAX_RETRIES`)
+
+**💡 Uso:**
+- Monitoreo de salud del servicio
+- Alertas cuando `status: "degraded"`
+- Verificar conectividad con Kafka
+- Integración con load balancers y sistemas de orquestación
 
 ---
 

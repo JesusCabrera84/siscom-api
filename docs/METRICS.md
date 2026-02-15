@@ -72,11 +72,34 @@ from(bucket: "your-bucket")
 ### 3. Conexiones SSE activas
 
 **Métrica:** `siscom_api.sse.active_connections`  
-**Tipo:** Counter (usado como gauge)  
+**Tipo:** Gauge  
 **Descripción:** Número actual de conexiones Server-Sent Events activas.  
 **Tag:** `app=siscom-api`
 
 Esta métrica se incrementa cuando un cliente se conecta a cualquier endpoint SSE y se decrementa cuando se desconecta.
+
+### 4. Estado del Circuit Breaker de Kafka
+
+**Métrica:** `siscom_api.kafka_circuit_breaker_open`  
+**Tipo:** Gauge  
+**Descripción:** Estado del circuit breaker de Kafka (1 = abierto/circuito en cooldown, 0 = cerrado/operando normalmente).  
+**Tag:** `app=siscom-api`
+
+Esta métrica indica si el consumidor de Kafka está en estado de circuit breaker abierto (tras múltiples fallos de conexión). Se reporta cada 10 segundos.
+
+**Consulta en InfluxDB:**
+
+```flux
+from(bucket: "your-bucket")
+  |> range(start: -1h)
+  |> filter(fn: (r) => r._measurement == "siscom_api.kafka_circuit_breaker_open")
+  |> filter(fn: (r) => r.app == "siscom-api")
+```
+
+**Uso:**
+- Monitorea la salud de la conexión con Kafka
+- Alerta cuando el circuit breaker se abre (indica problemas de conectividad)
+- Visualiza en Grafana para detectar patrones de desconexión
 
 **Endpoints SSE monitoreados:**
 
