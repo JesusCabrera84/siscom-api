@@ -25,7 +25,7 @@ async def get_communications_history(  # noqa: B008
         description="Lista de IDs de dispositivos GPS a consultar",
         min_length=1,
         max_length=100,
-        example=["867564050638581", "DEVICE123"],
+        examples=[["867564050638581", "DEVICE123"]],
     ),
     db=Depends(get_db),
 ):
@@ -58,7 +58,7 @@ async def get_device_communications(
         None,
         description="Fecha para filtrar comunicaciones (formato: YYYY-MM-DD). "
         "Si se proporciona, devuelve TODOS los campos disponibles.",
-        example="2024-12-14",
+        examples=["2024-12-14"],
     ),
     db=Depends(get_db),
 ):
@@ -106,7 +106,7 @@ async def get_latest_communications_endpoint(  # noqa: B008
         description="Lista de IDs de dispositivos GPS a consultar",
         min_length=1,
         max_length=100,
-        example=["867564050638581", "DEVICE123"],
+        examples=[["867564050638581", "DEVICE123"]],
     ),
     db=Depends(get_db),
 ):
@@ -147,7 +147,7 @@ async def get_device_latest_communication(  # noqa: B008
         "STATUS",
         alias="class",
         description="Filtro por tipo de clase de mensaje (ALERT o STATUS)",
-        example="STATUS",
+        examples=["STATUS"],
     ),
     db=Depends(get_db),
 ):

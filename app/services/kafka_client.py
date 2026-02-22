@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import threading
+import time
 from datetime import UTC, datetime
 
 from kafka import KafkaConsumer
@@ -23,11 +24,12 @@ class KafkaClient:
         self._consumer_thread: threading.Thread | None = None
         self._message_callbacks: list = []
 
-        # Circuit breaker
+        # Circuit breaker: evita miles de errores cuando Kafka falla
         self.max_retries = settings.KAFKA_MAX_RETRIES
         self.circuit_breaker_cooldown = settings.KAFKA_CIRCUIT_BREAKER_COOLDOWN
         self._circuit_open = False
         self._circuit_opened_at = None
+        self._last_circuit_log_at: float | None = None  # log cada 60s cuando circuito abierto
 
     def _create_consumer(self) -> KafkaConsumer:
         """Crear una nueva instancia del consumidor Kafka."""
@@ -110,6 +112,14 @@ class KafkaClient:
             if not self._circuit_open:
                 self._circuit_open = True
                 self._circuit_opened_at = datetime.now(UTC)
+                self._last_circuit_log_at = time.monotonic()
+                # Cerrar consumer para no seguir haciendo poll() y generar miles de errores
+                if self.consumer:
+                    try:
+                        self.consumer.close()
+                    except Exception:
+                        pass
+                    self.consumer = None
                 logger.critical(
                     f"Circuit breaker activado tras {self.max_retries} reintentos fallidos. No se intentará reconectar hasta pasar el cooldown de {self.circuit_breaker_cooldown}s."
                 )
@@ -139,6 +149,33 @@ class KafkaClient:
 
         while self._running:
             try:
+                # Circuit breaker abierto: no hacer poll(), dormir y loguear solo cada 60s
+                if self._circuit_open:
+                    cooldown_left = self._circuit_breaker_cooldown_remaining()
+                    if cooldown_left > 0:
+                        sleep_secs = min(30, max(5, cooldown_left))
+                        now = time.monotonic()
+                        if (
+                            self._last_circuit_log_at is None
+                            or (now - self._last_circuit_log_at) >= 60
+                        ):
+                            logger.warning(
+                                "Circuit breaker abierto (Kafka no disponible). "
+                                "Reintento en %.0fs. Sin nuevos intentos hasta entonces.",
+                                cooldown_left,
+                            )
+                            self._last_circuit_log_at = now
+                        time.sleep(sleep_secs)
+                        continue
+                    else:
+                        # Cooldown terminado, permitir reconexión
+                        self._circuit_open = False
+                        self._circuit_opened_at = None
+                        self._reconnect_attempts = 0
+                        logger.warning("Circuit breaker cerrado, reintentando conexión a Kafka...")
+                        self.consumer = None
+                        continue
+
                 if not self.consumer:
                     self._handle_consumer_unavailable()
                     continue
