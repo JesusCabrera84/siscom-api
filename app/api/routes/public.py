@@ -24,7 +24,7 @@ router = APIRouter(prefix="/api/v1/public/share-location", tags=["Public"])
 
 @router.get("/init")
 async def init_share_location(
-    token: str = Query(..., description="Token PASETO para validar acceso")
+    token: str = Query(..., description="Token PASETO para validar acceso"),
 ):
     """
     Inicializa una sesión de compartición de ubicación validando el token PASETO.

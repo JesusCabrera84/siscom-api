@@ -98,7 +98,9 @@ class WebSocketBroker:
         """
         # Extraer únicamente `device_id` (minúsculas). No soportamos variantes por typo.
         data = message.get("data") if isinstance(message.get("data"), dict) else {}
-        dev = (data.get("device_id") if data is not None else None) or message.get("device_id")
+        dev = (data.get("device_id") if data is not None else None) or message.get(
+            "device_id"
+        )
 
         if not dev:
             logger.warning(f"Mensaje sin device_id recibido: {message}")
@@ -305,7 +307,9 @@ async def process_websocket_messages(
                         }
                     )
 
-                    evt_dev = (event.get("data") or {}).get("device_id") or event.get("device_id")
+                    evt_dev = (event.get("data") or {}).get("device_id") or event.get(
+                        "device_id"
+                    )
                     logger.debug(f"Mensaje WebSocket enviado: {evt_dev}")
                 except Exception as send_error:
                     # Si no podemos enviar, la conexión probablemente está cerrada

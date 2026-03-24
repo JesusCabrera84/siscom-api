@@ -3,6 +3,7 @@ import json
 import logging
 import threading
 import time
+from contextlib import suppress
 from datetime import UTC, datetime
 
 from kafka import KafkaConsumer
@@ -29,7 +30,11 @@ class KafkaClient:
         self.circuit_breaker_cooldown = settings.KAFKA_CIRCUIT_BREAKER_COOLDOWN
         self._circuit_open = False
         self._circuit_opened_at = None
-        self._last_circuit_log_at: float | None = None  # log cada 60s cuando circuito abierto
+        self._last_circuit_log_at: float | None = (
+            None  # log cada 60s cuando circuito abierto
+        )
+        # Intervalo (segundos) entre logs cuando el circuit breaker está abierto
+        self._circuit_log_interval = 60
 
     def _create_consumer(self) -> KafkaConsumer:
         """Crear una nueva instancia del consumidor Kafka."""
@@ -115,10 +120,8 @@ class KafkaClient:
                 self._last_circuit_log_at = time.monotonic()
                 # Cerrar consumer para no seguir haciendo poll() y generar miles de errores
                 if self.consumer:
-                    try:
+                    with suppress(Exception):
                         self.consumer.close()
-                    except Exception:
-                        pass
                     self.consumer = None
                 logger.critical(
                     f"Circuit breaker activado tras {self.max_retries} reintentos fallidos. No se intentará reconectar hasta pasar el cooldown de {self.circuit_breaker_cooldown}s."
@@ -157,7 +160,8 @@ class KafkaClient:
                         now = time.monotonic()
                         if (
                             self._last_circuit_log_at is None
-                            or (now - self._last_circuit_log_at) >= 60
+                            or (now - self._last_circuit_log_at)
+                            >= self._circuit_log_interval
                         ):
                             logger.warning(
                                 "Circuit breaker abierto (Kafka no disponible). "
@@ -172,7 +176,9 @@ class KafkaClient:
                         self._circuit_open = False
                         self._circuit_opened_at = None
                         self._reconnect_attempts = 0
-                        logger.warning("Circuit breaker cerrado, reintentando conexión a Kafka...")
+                        logger.warning(
+                            "Circuit breaker cerrado, reintentando conexión a Kafka..."
+                        )
                         self.consumer = None
                         continue
 
