@@ -94,11 +94,14 @@ class WebSocketBroker:
         Publica un mensaje Kafka/Redpanda a todos los WebSockets suscritos al device_id.
 
         Args:
-            message: Mensaje Kafka/Redpanda completo con estructura {"data": {"DEVICE_ID": "..."}}
+            message: Mensaje Kafka/Redpanda completo con estructura {"data": {"device_id": "..."}}
         """
-        dev = message.get("data", {}).get("DEVICE_ID")
+        # Extraer únicamente `device_id` (minúsculas). No soportamos variantes por typo.
+        data = message.get("data") if isinstance(message.get("data"), dict) else {}
+        dev = (data.get("device_id") if data is not None else None) or message.get("device_id")
+
         if not dev:
-            logger.warning(f"Mensaje sin DEVICE_ID recibido: {message}")
+            logger.warning(f"Mensaje sin device_id recibido: {message}")
             return
 
         self._stats_total_messages += 1
@@ -302,9 +305,8 @@ async def process_websocket_messages(
                         }
                     )
 
-                    logger.debug(
-                        f"Mensaje WebSocket enviado: {event.get('data', {}).get('DEVICE_ID')}"
-                    )
+                    evt_dev = (event.get("data") or {}).get("device_id") or event.get("device_id")
+                    logger.debug(f"Mensaje WebSocket enviado: {evt_dev}")
                 except Exception as send_error:
                     # Si no podemos enviar, la conexión probablemente está cerrada
                     logger.warning(

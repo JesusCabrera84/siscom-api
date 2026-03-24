@@ -9,9 +9,9 @@
     "--network", "siscom-network",
     "--env-file", "${localWorkspaceFolder}/.env"
   ],
-  "forwardPorts": [8080],
+  "forwardPorts": [8000],
   "portsAttributes": {
-    "8080": {
+    "8000": {
       "label": "siscom-api",
       "onAutoForward": "notify"
     }

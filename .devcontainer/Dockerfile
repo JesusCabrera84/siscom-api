@@ -1,4 +1,4 @@
-# Dev container para siscom-api (puerto 8080)
+# Dev container para siscom-api (puerto 8000)
 FROM python:3.11-slim
 
 # Dependencias del sistema
@@ -21,8 +21,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY .devcontainer/start-uvicorn.sh /usr/local/bin/start-siscom-uvicorn.sh
 RUN chmod +x /usr/local/bin/start-siscom-uvicorn.sh
 
-# Código se monta desde el workspace; exponer puerto 8080
-EXPOSE 8080
+# Código se monta desde el workspace; exponer puerto 8000
+EXPOSE 8000
 
 # La app se inicia con postStartCommand/postAttachCommand en devcontainer.json
 # Mantener el contenedor vivo para desarrollo

@@ -1,6 +1,6 @@
 #!/bin/sh
 if pgrep -f "uvicorn app.main:app" >/dev/null 2>&1; then
-  echo "[siscom-api] uvicorn ya está en ejecución (puerto 8080)"
+  echo "[siscom-api] uvicorn ya está en ejecución (puerto 8000)"
   exit 0
 fi
 
@@ -19,7 +19,7 @@ if ! cd /app && python -c "from app.main import app" 2>/tmp/uvicorn-import-error
 fi
 
 # Iniciar uvicorn en background con mejor manejo de señales
-cd /app && nohup uvicorn app.main:app --port 8080 --host 0.0.0.0 >> /tmp/uvicorn.log 2>&1 &
+cd /app && nohup uvicorn app.main:app --port 8000 --host 0.0.0.0 >> /tmp/uvicorn.log 2>&1 &
 UVICORN_PID=$!
 sleep 2  # Dar tiempo a que uvicorn se inicie
 
@@ -30,4 +30,4 @@ if ! kill -0 $UVICORN_PID 2>/dev/null; then
   exit 1
 fi
 
-echo "[siscom-api] uvicorn iniciado (PID: $UVICORN_PID, puerto 8080). Log: /tmp/uvicorn.log"
+echo "[siscom-api] uvicorn iniciado (PID: $UVICORN_PID, puerto 8000). Log: /tmp/uvicorn.log"
