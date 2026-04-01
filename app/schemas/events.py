@@ -3,6 +3,7 @@ Schemas Pydantic para el módulo de eventos.
 """
 
 from datetime import datetime
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -12,6 +13,7 @@ class EventResponse(BaseModel):
     Schema para la respuesta de un evento.
 
     Representa un registro individual de evento con:
+    - unit_id: identificador de la unidad asociada al evento
     - source_id: identificador de la fuente del evento
     - event_type: código de tipo de evento (desde event_types)
     - occurred_at: fecha/hora cuando ocurrió el evento
@@ -19,6 +21,7 @@ class EventResponse(BaseModel):
     - source_epoch: timestamp unix desde la fuente
     """
 
+    unit_id: UUID | None = None
     source_id: str
     event_type: str = Field(..., alias="code")
     occurred_at: datetime
@@ -29,6 +32,7 @@ class EventResponse(BaseModel):
         from_attributes = True
         json_schema_extra = {
             "example": {
+                "unit_id": "123e4567-e89b-12d3-a456-426614174000",
                 "source_id": "DEVICE123",
                 "event_type": "ignition_on",
                 "occurred_at": "2026-03-15T10:30:45Z",
@@ -55,6 +59,7 @@ class EventsPageResponse(BaseModel):
             "example": {
                 "data": [
                     {
+                        "unit_id": "123e4567-e89b-12d3-a456-426614174000",
                         "source_id": "DEVICE123",
                         "event_type": "ignition_on",
                         "occurred_at": "2026-03-15T10:30:45Z",

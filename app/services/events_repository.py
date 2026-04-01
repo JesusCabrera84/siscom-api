@@ -78,7 +78,7 @@ async def get_events(  # noqa: PLR0913
 
     Returns:
         Tupla (eventos, next_cursor):
-        - eventos: lista de dicts con source_id, event_type, occurred_at, received_at, source_epoch
+        - eventos: lista de dicts con unit_id, source_id, event_type, occurred_at, received_at, source_epoch
         - next_cursor: cursor para la siguiente página, None si no hay más
     """
     # Determinar dirección de ordenamiento
@@ -126,6 +126,7 @@ async def get_events(  # noqa: PLR0913
     query = (
         select(
             Event.id,
+            Event.unit_id,
             Event.source_id,
             EventType.code,
             Event.occurred_at,
@@ -158,17 +159,18 @@ async def get_events(  # noqa: PLR0913
         rows = rows[:limit]
         # El cursor es el de la última fila de la página actual
         last_row = rows[-1]
-        next_cursor = encode_cursor(last_row[3], last_row[0])  # occurred_at, id
+        next_cursor = encode_cursor(last_row[4], last_row[0])  # occurred_at, id
 
     # Convertir filas a dicts
     for row in rows:
         events.append(
             {
-                "source_id": row[1],
-                "code": row[2],  # Será mapeado a event_type en Pydantic
-                "occurred_at": row[3],
-                "received_at": row[4],
-                "source_epoch": row[5],
+                "unit_id": row[1],
+                "source_id": row[2],
+                "code": row[3],  # Será mapeado a event_type en Pydantic
+                "occurred_at": row[4],
+                "received_at": row[5],
+                "source_epoch": row[6],
             }
         )
 

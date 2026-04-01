@@ -100,6 +100,7 @@ if (data.next_cursor) {
 {
   "data": [
     {
+      "unit_id": "123e4567-e89b-12d3-a456-426614174000",
       "source_id": "DEVICE123",
       "event_type": "ignition_on",
       "occurred_at": "2026-03-15T10:30:45+00:00",
@@ -107,6 +108,7 @@ if (data.next_cursor) {
       "source_epoch": 1710499845
     },
     {
+      "unit_id": "223e4567-e89b-12d3-a456-426614174001",
       "source_id": "DEVICE456",
       "event_type": "speed_alert",
       "occurred_at": "2026-03-15T10:29:12+00:00",
@@ -114,6 +116,7 @@ if (data.next_cursor) {
       "source_epoch": 1710499752
     },
     {
+      "unit_id": "123e4567-e89b-12d3-a456-426614174000",
       "source_id": "DEVICE123",
       "event_type": "gps_signal_lost",
       "occurred_at": "2026-03-15T09:45:00+00:00",
