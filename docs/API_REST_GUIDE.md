@@ -16,6 +16,7 @@ Los endpoints han sido migrados a seguir las **mejores prácticas REST**:
 
 | Endpoint                                                | Método | Auth   | Descripción                                              |
 | ------------------------------------------------------- | ------ | ------ | -------------------------------------------------------- |
+| `GET /api/v1/events`                                    | GET    | ❌ No  | Eventos de múltiples unidades con paginación por cursor  |
 | `GET /api/v1/communications`                            | GET    | ❌ No  | Histórico de múltiples dispositivos                      |
 | `GET /api/v1/communications/latest`                     | GET    | ❌ No  | Última comunicación de múltiples devices                 |
 | `GET /api/v1/devices/{device_id}/communications`        | GET    | ❌ No  | Histórico de un dispositivo (soporta `?received_at=`)    |
@@ -29,6 +30,133 @@ Los endpoints han sido migrados a seguir las **mejores prácticas REST**:
 ---
 
 ## 📡 Endpoints Detallados
+
+### 0️⃣ GET /api/v1/events
+
+Obtener eventos de múltiples unidades en un rango de fechas con paginación por keyset cursor.
+
+#### Request
+
+```http
+GET /api/v1/events?unit_id=123e4567-e89b-12d3-a456-426614174000&unit_id=223e4567-e89b-12d3-a456-426614174001&from=2026-03-01T00:00:00Z&to=2026-03-31T23:59:59Z&limit=50&order=desc
+```
+
+#### Query Parameters
+
+| Parámetro | Tipo        | Requerido | Default | Descripción                                                                                                     |
+|-----------|-------------|-----------|---------|--------------------------------------------------------------------------------------------------------------|
+| `unit_id` | array[UUID] | ✅ Sí     | —       | Lista de UUIDs de unidades a filtrar (mínimo 1, máximo 100)                                                   |
+| `from`    | datetime    | ✅ Sí     | —       | Fecha/hora inicial del rango en ISO 8601 (inclusive). Ejemplo: `2026-03-01T00:00:00Z`                       |
+| `to`      | datetime    | ✅ Sí     | —       | Fecha/hora final del rango en ISO 8601 (inclusive). Ejemplo: `2026-03-31T23:59:59Z`                         |
+| `limit`   | integer     | ❌ No     | 20      | Cantidad de registros por página (mínimo 1, máximo 200)                                                      |
+| `order`   | string      | ❌ No     | `desc`  | Orden: `asc` (antiguos primero) o `desc` (recientes primero)                                                 |
+| `cursor`  | string      | ❌ No     | —       | Cursor opaco (obtenerido de `next_cursor` en respuesta anterior) para continuar desde una página anterior     |
+
+#### Validaciones
+
+- `unit_id`: Debe ser UUID válido (FastAPI retorna 422 si no)
+- `from` y `to`: Deben ser ISO 8601 válido (FastAPI retorna 422 si no)
+- `limit`: Debe estar entre 1 y 200
+- `cursor`: Si es inválido, retorna 400 Bad Request
+
+#### Ejemplo con cURL
+
+```bash
+curl 'http://localhost:8000/api/v1/events?unit_id=123e4567-e89b-12d3-a456-426614174000&from=2026-03-01T00:00:00Z&to=2026-03-31T23:59:59Z&limit=5&order=desc'
+```
+
+#### Ejemplo con JavaScript
+
+```javascript
+const unitIds = [
+  "123e4567-e89b-12d3-a456-426614174000",
+  "223e4567-e89b-12d3-a456-426614174001"
+];
+
+const params = new URLSearchParams();
+unitIds.forEach(id => params.append("unit_id", id));
+params.append("from", "2026-03-01T00:00:00Z");
+params.append("to", "2026-03-31T23:59:59Z");
+params.append("limit", "50");
+params.append("order", "desc");
+
+const response = await fetch(
+  `http://localhost:8000/api/v1/events?${params.toString()}`
+);
+
+const data = await response.json();
+console.log(data);
+
+// Para la siguiente página, usar el cursor retornado
+if (data.next_cursor) {
+  params.append("cursor", data.next_cursor);
+  // Hacer siguiente request...
+}
+```
+
+#### Response (200 OK)
+
+```json
+{
+  "data": [
+    {
+      "source_id": "DEVICE123",
+      "event_type": "ignition_on",
+      "occurred_at": "2026-03-15T10:30:45+00:00",
+      "received_at": "2026-03-15T10:30:50+00:00",
+      "source_epoch": 1710499845
+    },
+    {
+      "source_id": "DEVICE456",
+      "event_type": "speed_alert",
+      "occurred_at": "2026-03-15T10:29:12+00:00",
+      "received_at": "2026-03-15T10:29:18+00:00",
+      "source_epoch": 1710499752
+    },
+    {
+      "source_id": "DEVICE123",
+      "event_type": "gps_signal_lost",
+      "occurred_at": "2026-03-15T09:45:00+00:00",
+      "received_at": "2026-03-15T09:45:05+00:00",
+      "source_epoch": 1710496500
+    }
+  ],
+  "next_cursor": "eyJvYSI6IFwiMjAyNi0wMy0xNVQwOTozNzowMCswMDowMFwiLCAiaWQiOiAiZjg5YTdhOWItY2RkMi00OWI1LWJhNzUtY2U1YzAwMDAwMDAwIn0="
+}
+```
+
+#### Response (400 Bad Request) - Cursor Inválido
+
+```json
+{
+  "detail": "Cursor inválido: Expecting value: line 1 column 1 (char 0)"
+}
+```
+
+#### Response (422 Unprocessable Entity) - Validación Fallida
+
+```json
+{
+  "detail": [
+    {
+      "type": "uuid_parsing",
+      "loc": ["query", "unit_id", 0],
+      "msg": "Input should be a valid UUID, unable to parse string",
+      "input": "invalid-uuid"
+    }
+  ]
+}
+```
+
+#### 📌 Notas sobre Paginación
+
+- **Cursor opaco**: El valor de `next_cursor` es Base64-encoded JSON con metadatos internos. El cliente debe pasarlo tal cual sin decodificar.
+- **Orden**: Si `order=desc`, los eventos van de más recientes a más antiguos. Si `order=asc`, de más antiguos a más recientes. El cursor avanza automáticamente en la dirección especificada.
+- **Continuidad**: Como se usa keyset pagination (No OFFSET), no hay duplicados ni saltos entre páginas incluso si nuevos eventos se insertan durante la paginación.
+- **next_cursor = null**: Indica que no hay más páginas disponibles.
+- **Eficiencia**: La query usa índice compuesto en `(unit_id, occurred_at, id)` para máximo rendimiento.
+
+---
 
 ### 1️⃣ GET /api/v1/communications
 

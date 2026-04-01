@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
-from app.api.routes import communications, public, stream
+from app.api.routes import communications, events, public, stream
 from app.api.routes.stream import start_kafka_broker_bridge
 from app.core.config import settings
 from app.core.database import engine
@@ -23,6 +23,22 @@ logging.basicConfig(
 
 # Asegurar que el middleware tenga logging activado
 logging.getLogger("app.core.middleware").setLevel(logging.INFO)
+
+
+# Filtrar access logs de /health para reducir ruido
+class _HealthAccessFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        try:
+            msg = record.getMessage()
+        except Exception:
+            return True
+
+        # Uvicorn access log messages contienen el path, filtrar los que sean /health
+        return not ("GET /health" in msg or "POST /health" in msg)
+
+
+uvicorn_access_logger = logging.getLogger("uvicorn.access")
+uvicorn_access_logger.addFilter(_HealthAccessFilter())
 
 
 @asynccontextmanager
@@ -122,6 +138,7 @@ async def health_check():
 
 # Incluir routers API v1
 app.include_router(communications.router)
+app.include_router(events.router)
 app.include_router(stream.router)
 
 # Incluir routers públicos
