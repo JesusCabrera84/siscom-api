@@ -11,7 +11,8 @@ Las siguientes variables de entorno deben configurarse:
 ```bash
 # Kafka/Redpanda Configuration
 KAFKA_BOOTSTRAP_SERVERS=<servidores_bootstrap>    # Ejemplo: localhost:9092,kafka1:9092,kafka2:9092
-KAFKA_TOPIC=<topic>                               # Ejemplo: tracking/data
+KAFKA_TOPIC=<topic_posiciones>                    # Ejemplo: tracking/data
+KAFKA_ALERTS_TOPIC=<topic_alertas>                # Ejemplo: tracking/alerts (opcional)
 KAFKA_GROUP_ID=<group_id>                         # Ejemplo: siscom-api-consumer
 KAFKA_AUTO_OFFSET_RESET=<offset_reset>            # Ejemplo: latest o earliest
 KAFKA_USERNAME=<usuario>                          # Usuario del cluster Kafka (opcional)
@@ -42,15 +43,15 @@ Las variables Kafka ya están configuradas en `docker-compose.yml` y se cargan a
 
 1. **KafkaClient** (`app/services/kafka_client.py`):
    - Cliente Kafka que se conecta al cluster Redpanda/Kafka
-   - Se suscribe al topic configurado
-   - Maneja mensajes entrantes y los coloca en una cola asíncrona
+  - Se suscribe a uno o dos topics en un único consumer (`KAFKA_TOPIC` + opcional `KAFKA_ALERTS_TOPIC`)
+  - Propaga callbacks con metadatos de Kafka (`topic`, `payload`, `timestamp`, `partition`, `offset`)
    - Maneja reconexiones automáticas en caso de fallos
    - Usa threading para consumir mensajes sin bloquear el event loop
 
 2. **WebSocket Stream** (`app/api/routes/stream.py`):
    - Endpoint `/api/v1/stream` que expone eventos WebSocket
-   - Consume mensajes del cliente Kafka
-   - Filtra mensajes por `device_ids` si se especifican
+  - Enruta posiciones y alertas por `device_id`
+  - Filtra mensajes por `device_ids` especificados por el cliente
    - Envía keep-alive cada 60 segundos
 
 3. **Lifecycle Management** (`app/main.py`):
@@ -68,38 +69,69 @@ Las variables Kafka ya están configuradas en `docker-compose.yml` y se cargan a
 
 ## Formato de Mensaje
 
-Los mensajes recibidos desde Kafka/Redpanda deben tener el siguiente formato JSON:
+### Posiciones (`KAFKA_TOPIC`)
+
+Se conserva el formato actual de posiciones; el `device_id` puede llegar en `data.device_id` o en raíz.
 
 ```json
 {
   "data": {
-    "DEVICE_ID": "0848086072",
-    "LATITUD": "+20.652472",
-    "LONGITUD": "-100.391423",
-    "SPEED": "0.00",
-    "GPS_DATETIME": "2025-10-18 00:51:16",
-    "ENGINE_STATUS": "OFF",
-    "SATELLITES": "9",
-    ...
-  },
-  "decoded": { ... },
-  "metadata": { ... },
-  "raw": "...",
-  "uuid": "..."
+    "device_id": "0848086072",
+    "latitude": 20.652472,
+    "longitude": -100.391423
+  }
 }
 ```
 
-El campo `data.DEVICE_ID` se utiliza para filtrar mensajes por dispositivo.
+### Alertas (`KAFKA_ALERTS_TOPIC`)
+
+El payload de alertas debe incluir `device_id` (raíz, `data.device_id` o `payload.device_id`).
+
+```json
+{
+  "id": "5e29d441-16c6-43f2-ba48-650ea9946a58",
+  "device_id": "0848086072",
+  "alert_type": "Engine OFF",
+  "payload": {
+    "engine_status": "OFF",
+    "latitude": 19.216813,
+    "longitude": -102.575137
+  },
+  "occurred_at": "2026-03-29T20:56:34Z"
+}
+```
+
+Salida al cliente WebSocket para alertas:
+
+```json
+{
+  "event": "alert",
+  "data": {
+    "message_type": "alert",
+    "source_topic": "tracking/alerts",
+    "data": {
+      "device_id": "0848086072",
+      "alert_type": "Engine OFF"
+    }
+  }
+}
+```
 
 ## Uso del Endpoint WebSocket
 
-### Recibir Todos los Eventos
+### Conectarse al Stream
 
 ```javascript
-const ws = new WebSocket('ws://localhost:8000/api/v1/stream');
+const ws = new WebSocket('ws://localhost:8000/api/v1/stream?device_ids=0848086072');
 ws.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    console.log('Mensaje recibido:', data);
+  const message = JSON.parse(event.data);
+  if (message.event === 'message') {
+    console.log('📍 Posición:', message.data);
+  } else if (message.event === 'alert') {
+    console.log('🚨 Alerta:', message.data);
+  } else if (message.event === 'ping') {
+    console.log('💓 Keep-alive');
+  }
 };
 ```
 
@@ -110,8 +142,12 @@ Para recibir solo eventos de dispositivos específicos:
 ```javascript
 const ws = new WebSocket('ws://localhost:8000/api/v1/stream?device_ids=0848086072,0848086073');
 ws.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    console.log('Mensaje recibido:', data);
+  const message = JSON.parse(event.data);
+  if (message.event === 'message') {
+    console.log('📍 Posición:', message.data);
+  } else if (message.event === 'alert') {
+    console.log('🚨 Alerta:', message.data);
+  }
 };
 ```
 
@@ -121,8 +157,14 @@ ws.onmessage = (event) => {
 const eventSource = new WebSocket("/api/v1/stream?device_ids=0848086072");
 
 eventSource.onmessage = (event) => {
-  const data = JSON.parse(event.data);
-  console.log("Evento recibido:", data);
+  const message = JSON.parse(event.data);
+  if (message.event === "message") {
+    console.log("Posición recibida:", message.data);
+  } else if (message.event === "alert") {
+    console.log("Alerta recibida:", message.data);
+  } else if (message.event === "ping") {
+    console.log("Keep-alive");
+  }
 };
 
 eventSource.onopen = (event) => {
@@ -150,7 +192,7 @@ El cliente Kafka maneja errores de manera resiliente:
    - Se registra un log crítico único (evita spam)
    - Después del cooldown (`KAFKA_CIRCUIT_BREAKER_COOLDOWN`, default: 300s), el circuito se cierra y se reintenta
 4. **Mensajes Malformados**: Registra el error y continúa procesando otros mensajes
-5. **Cliente No Conectado**: El stream WebSocket espera hasta que el cliente Kafka se conecte
+5. **Cliente No Conectado**: El stream WebSocket espera eventos una vez que Kafka entrega mensajes
 6. **Compresión lz4**: La librería `lz4` está instalada para soportar mensajes comprimidos con codec lz4
 
 ## Logs
@@ -187,11 +229,12 @@ El sistema de métricas incluye:
 
 ### No se reciben mensajes
 
-1. Verifica que el topic configurado sea correcto
+1. Verifica que los topics configurados sean correctos (`KAFKA_TOPIC` y opcional `KAFKA_ALERTS_TOPIC`)
 2. Verifica que el cluster esté publicando mensajes al topic
 3. Revisa los logs en nivel DEBUG
 4. Verifica que el formato JSON del mensaje sea correcto
-5. Verifica que el `KAFKA_GROUP_ID` sea único para evitar conflictos
+5. Verifica que el mensaje incluya `device_id` para poder enrutar al WebSocket
+6. Verifica que el `KAFKA_GROUP_ID` sea único para evitar conflictos
 
 ### El stream WebSocket se desconecta
 

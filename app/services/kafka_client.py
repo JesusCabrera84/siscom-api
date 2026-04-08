@@ -36,6 +36,18 @@ class KafkaClient:
         # Intervalo (segundos) entre logs cuando el circuit breaker está abierto
         self._circuit_log_interval = 60
 
+    def _topics_to_subscribe(self) -> list[str]:
+        """Retorna los topics configurados para consumo sin duplicados."""
+        topics: list[str] = []
+
+        if settings.KAFKA_TOPIC:
+            topics.append(settings.KAFKA_TOPIC)
+
+        if settings.KAFKA_ALERTS_TOPIC and settings.KAFKA_ALERTS_TOPIC not in topics:
+            topics.append(settings.KAFKA_ALERTS_TOPIC)
+
+        return topics
+
     def _create_consumer(self) -> KafkaConsumer:
         """Crear una nueva instancia del consumidor Kafka."""
         # Configuración básica del consumidor
@@ -65,7 +77,12 @@ class KafkaClient:
                 f"Autenticación SASL Kafka configurada: {settings.KAFKA_SASL_MECHANISM} con protocolo {settings.KAFKA_SECURITY_PROTOCOL}"
             )
 
-        return KafkaConsumer(settings.KAFKA_TOPIC, **consumer_config)
+        topics = self._topics_to_subscribe()
+        if not topics:
+            raise ValueError("No hay topics Kafka configurados para consumir")
+
+        logger.info(f"Kafka consumer suscrito a topics: {topics}")
+        return KafkaConsumer(*topics, **consumer_config)
 
     def _handle_consumer_unavailable(self):
         """Maneja el caso cuando el consumer no está disponible."""
@@ -79,12 +96,19 @@ class KafkaClient:
         """Procesa un mensaje individual de Kafka."""
         try:
             payload = message.value
+            kafka_event = {
+                "topic": message.topic,
+                "payload": payload,
+                "timestamp": message.timestamp,
+                "partition": message.partition,
+                "offset": message.offset,
+            }
             logger.debug(f"Mensaje recibido del topic {message.topic}: {payload}")
 
             # Llamar callbacks registrados (WebSocket Broker)
             if self._loop and self._message_callbacks:
                 for callback in self._message_callbacks:
-                    asyncio.run_coroutine_threadsafe(callback(payload), self._loop)
+                    asyncio.run_coroutine_threadsafe(callback(kafka_event), self._loop)
 
         except json.JSONDecodeError as e:
             logger.error(f"Error al decodificar mensaje JSON: {e}")
@@ -148,7 +172,9 @@ class KafkaClient:
 
     def _consume_messages(self):
         """Thread worker para consumir mensajes de Kafka."""
-        logger.info(f"Iniciando consumo de mensajes del topic: {settings.KAFKA_TOPIC}")
+        logger.info(
+            f"Iniciando consumo de mensajes de Kafka en topics: {self._topics_to_subscribe()}"
+        )
 
         while self._running:
             try:

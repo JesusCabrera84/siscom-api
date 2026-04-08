@@ -2,6 +2,11 @@
 
 Esta carpeta contiene ejemplos prácticos para conectarse al endpoint WebSocket de siscom-api.
 
+El stream usa `device_id` como filtro y puede enviar dos tipos de eventos en la misma conexión:
+
+- Posiciones
+- Alertas (`message_type: alert`)
+
 ## 📁 Archivos
 
 ### 1. `websocket_client_example.py`
@@ -46,6 +51,10 @@ chmod +x examples/websocket_client_example.py
    SPEED: 45
 
 💓 Keep-alive recibido
+
+🚨 Alerta recibida (message_type=alert)
+    Device ID: 0848086072
+    Alert Type: Engine OFF
 ```
 
 ---

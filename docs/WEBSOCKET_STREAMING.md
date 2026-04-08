@@ -6,11 +6,12 @@ Sistema de streaming WebSocket de **alta performance**, diseñado para escalar a
 
 ### ✅ Características Principales
 
-- **Alta escalabilidad**: Un único consumer Kafka/Redpanda para todas las conexiones
+- **Alta escalabilidad**: Un único consumer Kafka/Redpanda multi-topic para todas las conexiones
 - **Full-duplex**: Comunicación bidireccional (WebSocket)
 - **Backpressure automático**: Control de flujo cuando clientes son lentos
 - **Sin buffering**: Sin problemas con ALB/nginx
 - **Filtrado eficiente**: Por device_ids
+- **Unificación de flujos**: Posiciones y alertas por el mismo socket usando `device_id`
 - **Monitoreo en tiempo real**: Estadísticas del broker
 
 ---
@@ -34,7 +35,7 @@ Sistema de streaming WebSocket de **alta performance**, diseñado para escalar a
                         callback/publish
                                │
                     ┌──────────▼──────────────┐
-                    │   WebSocketBroker       │
+                    │   WebSocketManager      │
                     │   ✅ Pub/Sub interno    │
                     │   ✅ asyncio.Queue      │
                     │   ✅ Filtro device_id   │
@@ -50,10 +51,10 @@ Sistema de streaming WebSocket de **alta performance**, diseñado para escalar a
 
 ### Flujo de Mensajes
 
-1. **Kafka/Redpanda** recibe mensaje → decodifica JSON
+1. **Kafka/Redpanda** recibe mensaje en `KAFKA_TOPIC` (posiciones) o `KAFKA_ALERTS_TOPIC` (alertas)
 2. **kafka_client** ejecuta callbacks registrados (thread-safe)
-3. **kafka_message_handler** recibe mensaje vía callback
-4. **WebSocketBroker** distribuye solo a colas con ese device_id
+3. **kafka_message_handler** enruta por topic y extrae `device_id`
+4. **WebSocketManager** distribuye solo a colas con ese `device_id`
 5. **WebSocket connections** reciben y envían al cliente
 
 **Clave de Performance:** Sin duplicación de trabajo, distribución en memoria ultra rápida.
@@ -92,8 +93,11 @@ ws.onmessage = (event) => {
   const message = JSON.parse(event.data);
 
   if (message.event === 'message') {
-    // Datos del dispositivo
+    // Datos de posición
     console.log('📡 Datos recibidos:', message.data);
+  } else if (message.event === 'alert') {
+    // Alerta por device_id
+    console.log('🚨 Alerta recibida:', message.data);
   } else if (message.event === 'ping') {
     // Keep-alive (cada 60 segundos)
     console.log('💓 Keep-alive');
@@ -128,7 +132,9 @@ async def connect_to_stream():
             data = json.loads(message)
 
             if data["event"] == "message":
-                print(f"📡 Datos recibidos: {data['data']}")
+            print(f"📡 Posición recibida: {data['data']}")
+          elif data["event"] == "alert":
+            print(f"🚨 Alerta recibida: {data['data']}")
             elif data["event"] == "ping":
                 print("💓 Keep-alive")
 
@@ -158,6 +164,8 @@ function DeviceStream({ deviceIds }) {
       const message = JSON.parse(event.data);
       if (message.event === 'message') {
         setMessages((prev) => [...prev, message.data]);
+      } else if (message.event === 'alert') {
+        setMessages((prev) => [...prev, { type: 'alert', data: message.data }]);
       }
     };
 
@@ -203,6 +211,7 @@ GET /api/v1/stream/stats
 ```json
 {
   "total_messages_processed": 15234,
+  "dropped_messages": 12,
   "active_subscribers": 45,
   "devices_being_monitored": 23
 }
@@ -213,6 +222,7 @@ GET /api/v1/stream/stats
 | Métrica                    | Descripción                                           |
 |----------------------------|-------------------------------------------------------|
 | `total_messages_processed` | Total de mensajes Kafka/Redpanda procesados desde el inicio |
+| `dropped_messages`         | Mensajes descartados por backpressure en colas llenas |
 | `active_subscribers`       | Número de suscripciones activas (colas)               |
 | `devices_being_monitored`  | Número de device_ids únicos con subscribers activos   |
 
@@ -220,7 +230,7 @@ GET /api/v1/stream/stats
 
 ## 🔄 Formato de Mensajes
 
-### Mensaje de Datos
+### Mensaje de Datos de Posición (sin cambios)
 
 ```json
 {
@@ -237,6 +247,36 @@ GET /api/v1/stream/stats
   }
 }
 ```
+
+### Mensaje de Alerta (mismo socket, mismo `device_id`)
+
+```json
+{
+  "event": "alert",
+  "data": {
+    "message_type": "alert",
+    "source_topic": "tracking/alerts",
+    "data": {
+      "id": "5e29d441-16c6-43f2-ba48-650ea9946a58",
+      "device_id": "867564050638581",
+      "alert_type": "Engine OFF",
+      "payload": {
+        "engine_status": "OFF",
+        "latitude": 19.216813,
+        "longitude": -102.575137
+      },
+      "occurred_at": "2026-03-29T20:56:34Z"
+    }
+  }
+}
+```
+
+Regla de enrutamiento: si el cliente está suscrito a `device_ids=867564050638581`, recibirá tanto posiciones como alertas de ese dispositivo.
+
+Regla de evento WS:
+
+- Posición: `event: "message"`
+- Alerta: `event: "alert"`
 
 ### Mensaje Keep-Alive (Ping)
 
@@ -365,20 +405,23 @@ ws://localhost:8000/api/v1/stream?device_ids=0848086072
 
 ### No llegan mensajes
 
-1. **Verificar que MQTT esté conectado:**
-   ```bash
-   # Ver logs de la aplicación
-   # Debe aparecer: "✅ Bridge MQTT → WebSocket activo"
-   ```
+1. **Verificar que Kafka/Redpanda esté conectado:**
+
+```bash
+# Ver logs de la aplicación
+# Debe aparecer: "✅ Kafka -> WebSocket Manager bridge iniciado"
+```
 
 2. **Verificar estadísticas del broker:**
-   ```bash
-   curl http://localhost:8000/api/v1/stream/stats
-   ```
 
-3. **Verificar que el device_id esté publicando mensajes MQTT:**
-   - Revisar el topic MQTT configurado
-   - Confirmar que el `DEVICE_ID` en el mensaje coincida
+```bash
+curl http://localhost:8000/api/v1/stream/stats
+```
+
+3. **Verificar que el device_id esté publicando mensajes Kafka:**
+
+- Revisar `KAFKA_TOPIC` para posiciones y `KAFKA_ALERTS_TOPIC` para alertas
+- Confirmar que el `device_id` en el mensaje coincida
 
 ### Mensajes se pierden (backpressure)
 
@@ -390,9 +433,9 @@ Cola llena para device_id X. Aplicando backpressure
 **Causa:** El cliente WebSocket no procesa mensajes suficientemente rápido.
 
 **Soluciones:**
-1. Aumentar `maxsize` en `WebSocketBroker.subscribe()`
+1. Aumentar `maxsize` en `WebSocketManager.subscribe()`
 2. Optimizar el procesamiento en el cliente
-3. Implementar throttling en el lado del dispositivo GPS
+3. Implementar throttling en productores si el volumen de eventos es alto
 
 ---
 
@@ -489,10 +532,10 @@ ws.onclose = (event) => {
 app/
 ├── api/
 │   └── routes/
-│       ├── stream.py          # WebSocket endpoint principal + broker
+│       ├── stream.py          # WebSocket endpoint principal + manager
 │       └── public.py          # WebSocket endpoint público (share-location)
 ├── services/
-│   └── mqtt_client.py         # Cliente MQTT con callbacks
+│   └── kafka_client.py        # Cliente Kafka multi-topic con callbacks
 └── main.py                    # Inicialización del bridge
 
 examples/

@@ -7,7 +7,7 @@ API FastAPI para gestión de comunicaciones de dispositivos GPS (Suntech y Quecl
 - ✅ FastAPI con async/await
 - ✅ PostgreSQL con SQLAlchemy async
 - ✅ Autenticación JWT
-- ✅ Server-Sent Events (SSE) para streaming
+- ✅ WebSocket para streaming en tiempo real
 - ✅ Integración Kafka/Redpanda para eventos en tiempo real
 - ✅ Pool de conexiones optimizado
 - ✅ Health checks
@@ -87,6 +87,7 @@ STATSD_PREFIX=siscom_api
 # Kafka/Redpanda Configuration
 KAFKA_BOOTSTRAP_SERVERS=localhost:9092
 KAFKA_TOPIC=tracking/data
+KAFKA_ALERTS_TOPIC=tracking/alerts
 KAFKA_GROUP_ID=siscom-api-consumer
 KAFKA_AUTO_OFFSET_RESET=latest
 KAFKA_USERNAME=kafka_user
@@ -289,24 +290,30 @@ GET /api/v1/devices/{device_id}/communications
 Authorization: Bearer {token}
 ```
 
-#### Stream SSE - Eventos en Tiempo Real (Kafka/Redpanda)
+#### Stream WebSocket - Eventos en Tiempo Real (Kafka/Redpanda)
 
-Endpoint de streaming que consume mensajes de Mosquitto y los transmite vía Server-Sent Events:
+Endpoint de streaming que consume mensajes de Kafka/Redpanda y los transmite vía WebSocket. Posiciones y alertas comparten el mismo socket usando `device_id` como llave de suscripción.
 
 ```http
-# Todos los dispositivos
-GET /api/v1/stream
-Accept: text/event-stream
-
 # Filtrar por device_ids
-GET /api/v1/stream?device_ids=0848086072,0848086073
-Accept: text/event-stream
+WS /api/v1/stream?device_ids=0848086072,0848086073
 ```
 
-**Ejemplo con curl:**
+**Ejemplo con cliente WebSocket (JavaScript):**
 
-```bash
-curl -N "http://localhost:8000/api/v1/stream?device_ids=0848086072"
+```javascript
+const ws = new WebSocket(
+  "ws://localhost:8000/api/v1/stream?device_ids=0848086072"
+);
+
+ws.onmessage = (event) => {
+  const message = JSON.parse(event.data);
+  if (message.event === "message") {
+    console.log("Posicion:", message.data);
+  } else if (message.event === "alert") {
+    console.log("Alerta:", message.data);
+  }
+};
 ```
 
 Ver [KAFKA_INTEGRATION.md](docs/KAFKA_INTEGRATION.md) para más detalles sobre la integración Kafka/Redpanda.
@@ -318,8 +325,8 @@ Ver [KAFKA_INTEGRATION.md](docs/KAFKA_INTEGRATION.md) para más detalles sobre l
 | `GET /health`                                    | GET    | ❌ No  | Health check del servicio            |
 | `GET /api/v1/communications`                     | GET    | ✅ JWT | Histórico de múltiples dispositivos  |
 | `GET /api/v1/devices/{device_id}/communications` | GET    | ✅ JWT | Histórico de un solo dispositivo     |
-| `GET /api/v1/stream`                             | GET    | ❌ No  | Stream SSE con mensajes Kafka/Redpanda |
-| `GET /api/v1/stream?device_ids={ids}`            | GET    | ❌ No  | Stream SSE filtrado por dispositivos |
+| `WS /api/v1/stream`                              | WS     | ❌ No  | Stream WebSocket con posiciones y alertas |
+| `GET /api/v1/stream/stats`                       | GET    | ❌ No  | Estadísticas del manager WebSocket |
 
 ## 🏗️ Arquitectura
 

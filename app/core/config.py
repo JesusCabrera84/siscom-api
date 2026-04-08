@@ -43,6 +43,7 @@ class Settings(BaseSettings):
     # Kafka/Redpanda Configuration
     KAFKA_BOOTSTRAP_SERVERS: str = "localhost:9092"
     KAFKA_TOPIC: str = "tracking/data"
+    KAFKA_ALERTS_TOPIC: str = ""
     KAFKA_GROUP_ID: str = "siscom-api-consumer"
     KAFKA_AUTO_OFFSET_RESET: str = "latest"
     KAFKA_USERNAME: str = ""

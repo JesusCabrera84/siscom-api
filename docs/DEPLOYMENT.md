@@ -35,6 +35,7 @@ Esta guía cubre el despliegue de SISCOM API v1 (REST) en EC2 usando GitHub Acti
    - `DB_USERNAME`: Usuario de la base de datos
    - `KAFKA_BOOTSTRAP_SERVERS`: Servidores bootstrap de Kafka (ej: localhost:9092)
    - `KAFKA_TOPIC`: Topic de Kafka (ej: siscom-minimal)
+   - `KAFKA_ALERTS_TOPIC`: Topic de alertas (ej: tracking/alerts, opcional)
    - `KAFKA_GROUP_ID`: Group ID del consumidor (ej: siscom-api-consumer)
    - `KAFKA_AUTO_OFFSET_RESET`: Offset reset (latest o earliest)
    - `KAFKA_SASL_MECHANISM`: Mecanismo SASL (ej: SCRAM-SHA-256)

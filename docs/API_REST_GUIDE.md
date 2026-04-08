@@ -520,6 +520,11 @@ Stream WebSocket en tiempo real desde Kafka/Redpanda
 
 **⚡ Este endpoint consume mensajes en tiempo real desde Kafka/Redpanda y los transmite vía WebSocket.**
 
+El socket unifica dos tipos de eventos para los `device_ids` suscritos:
+
+- Posiciones (topic principal `KAFKA_TOPIC`)
+- Alertas (topic adicional `KAFKA_ALERTS_TOPIC`)
+
 #### URL de Conexión
 
 ```
@@ -551,23 +556,9 @@ ws.onmessage = (event) => {
   const message = JSON.parse(event.data);
 
   if (message.event === "message") {
-    // Datos del dispositivo
-    console.log("📡 Evento Kafka recibido:", message.data);
-    // Estructura:
-    // {
-    //   "event": "message",
-    //   "data": {
-    //     "data": {
-    //       "DEVICE_ID": "0848086072",
-    //       "LATITUD": "+20.652472",
-    //       "LONGITUD": "-100.391423",
-    //       "SPEED": "0.00",
-    //       ...
-    //     },
-    //     "decoded": {...},
-    //     "metadata": {...}
-    //   }
-    // }
+    console.log("📡 Posición recibida:", message.data);
+  } else if (message.event === "alert") {
+    console.log("🚨 Alerta recibida:", message.data);
   } else if (message.event === "ping") {
     console.log("💓 Keep-alive recibido");
   }
@@ -584,20 +575,40 @@ ws.onclose = (event) => {
 
 #### Formato de Mensajes
 
-**Mensaje de datos:**
+**Mensaje de posición:**
 
 ```json
 {
   "event": "message",
   "data": {
     "data": {
-      "DEVICE_ID": "0848086072",
-      "LATITUD": "+20.652472",
-      "LONGITUD": "-100.391423",
-      "SPEED": "0.00"
+      "device_id": "0848086072",
+      "latitude": 20.652472,
+      "longitude": -100.391423,
+      "speed": 0
     },
     "decoded": {},
     "metadata": {}
+  }
+}
+```
+
+**Mensaje de alerta:**
+
+```json
+{
+  "event": "alert",
+  "data": {
+    "message_type": "alert",
+    "source_topic": "tracking/alerts",
+    "data": {
+      "device_id": "0848086072",
+      "alert_type": "Engine OFF",
+      "payload": {
+        "engine_status": "OFF"
+      },
+      "occurred_at": "2026-03-29T20:56:34Z"
+    }
   }
 }
 ```
@@ -612,6 +623,11 @@ ws.onclose = (event) => {
   }
 }
 ```
+
+Regla de evento WS:
+
+- Posición: `event: "message"`
+- Alerta: `event: "alert"`
 
 #### Características
 
